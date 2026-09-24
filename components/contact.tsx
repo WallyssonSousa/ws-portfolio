@@ -10,23 +10,18 @@ export default function Contact() {
     email: "",
     message: "",
   })
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const whatsappNumber = "5511997135477"
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    setIsSubmitting(true)
 
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    const text = `Olá, me chamo ${formData.name}\nEmail: ${formData.email}\n\n${formData.message}`
+    const whatsappURL = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`
 
-    const text = `Olá, me chamo ${formData.name} %0AEmail: ${formData.email} %0A%0A${formData.message}`
+    // Abre ainda dentro do clique, senão bloqueadores de pop-up (Safari) barram a janela
+    window.open(whatsappURL, "_blank", "noopener,noreferrer")
 
-    const whatsappURL = `https://wa.me/${whatsappNumber}?text=${text}`
-
-    window.open(whatsappURL, "_blank")
-
-    setIsSubmitting(false)
     setFormData({ name: "", email: "", message: "" })
   }
 
@@ -53,7 +48,7 @@ export default function Contact() {
 
           <div className="grid gap-4">
             {/* Email */}
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/[0.05] backdrop-blur-sm">
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/[0.05]">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500/20 to-cyan-500/20 flex items-center justify-center border border-white/10">
                   <svg className="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -78,7 +73,7 @@ export default function Contact() {
             </div>
 
             {/* Telefone */}
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/[0.05] backdrop-blur-sm">
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/[0.05]">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-violet-500/20 flex items-center justify-center border border-white/10">
                   <svg className="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -93,10 +88,10 @@ export default function Contact() {
                 <div>
                   <h4 className="font-semibold text-white">Telefone</h4>
                   <a
-                    href="tel:+5511999999999"
+                    href="tel:+5511997135477"
                     className="text-[#9aa4b2] hover:text-white transition-colors duration-200 text-sm"
                   >
-                    +55 (11) 99999-9999
+                    +55 (11) 99713-5477
                   </a>
                 </div>
               </div>
@@ -107,12 +102,16 @@ export default function Contact() {
           <div className="flex gap-3">
             <a
               href="https://github.com/WallyssonSousa"
+              target="_blank"
+              rel="noreferrer"
               className="px-4 py-3 rounded-xl bg-gradient-to-r from-white/[0.02] to-white/[0.01] border border-white/[0.05] text-[#9aa4b2] hover:text-white hover:border-white/10 transition-all duration-200 hover:-translate-y-[1px] text-sm"
             >
               GitHub
             </a>
             <a
               href="https://www.linkedin.com/in/wallyssonsousa/"
+              target="_blank"
+              rel="noreferrer"
               className="px-4 py-3 rounded-xl bg-gradient-to-r from-white/[0.02] to-white/[0.01] border border-white/[0.05] text-[#9aa4b2] hover:text-white hover:border-white/10 transition-all duration-200 hover:-translate-y-[1px] text-sm"
             >
               LinkedIn
@@ -123,7 +122,7 @@ export default function Contact() {
         {/* Formulário */}
         <div>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="p-8 rounded-2xl bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/[0.05] backdrop-blur-sm space-y-6">
+            <div className="p-8 rounded-2xl bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/[0.05] space-y-6">
               <h3 className="text-lg font-semibold text-white mb-6">Envie uma mensagem</h3>
 
               <div className="space-y-4">
@@ -178,10 +177,9 @@ export default function Contact() {
 
               <Button
                 type="submit"
-                disabled={isSubmitting}
                 className="w-full bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] hover:border-white/[0.2] text-white font-medium py-3 px-6 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-violet-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSubmitting ? "Enviando..." : "Enviar via WhatsApp"}
+                Enviar via WhatsApp
               </Button>
             </div>
           </form>

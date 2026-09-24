@@ -1,4 +1,3 @@
-"use client"
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -38,7 +37,7 @@ const ACADEMIC: AcademicItem[] = [
     institution: "Etec Jardim Paulistano",
     location: "São Paulo, SP",
     period: "2021 — 2023",
-    details: "Meu primerio contato com programação, tendo o conhecimento inicial, e técnico em lógica de programação, algoritmos, desenvolvimento de sistemas, desenvolviment mobile, análise de sistemas e banco de dados.",
+    details: "Meu primeiro contato com programação, tendo o conhecimento inicial e técnico em lógica de programação, algoritmos, desenvolvimento de sistemas, desenvolvimento mobile, análise de sistemas e banco de dados.",
     highlights: ["Lógica de Programação", "Banco de dados relacionais", "Desenvolvimento Web", "Desenvolvimento Mobile", "Análise de Sistemas", "Desenvolvimento de Sistemas"
      ],
   },
@@ -50,8 +49,8 @@ const PROFISSIONAL: PROFISSIONALItem[] = [
     company: "Soft Clever",
     location: "Presencial",
     period: "2025 - Atual",
-    details: "Construção de aplicações web para empresas do setores de vendas e financeiro. Aplicações que interagem com o ERP Sirius, da própria Soft Clever. Desenvolvimento de Aplicativos PDV, com integração de API local e web. Além de manutenção e melhora em aplicações legados, seja backend ou frontend.",
-    stack: ["Next.js", "TypeScript", "MySQL", "Express", "Docker", "React Native", "Github", "Shadcn", "Figma", "Postman", "Java Script", "Arquitetura MVC"],
+    details: "Construção de aplicações web para empresas dos setores de vendas e financeiro. Aplicações que interagem com o ERP Sirius, da própria Soft Clever. Desenvolvimento de Aplicativos PDV, com integração de API local e web. Além de manutenção e melhora em aplicações legados, seja backend ou frontend.",
+    stack: ["Next.js", "TypeScript", "MySQL", "Express", "Docker", "React Native", "Github", "Shadcn", "Figma", "Postman", "JavaScript", "Arquitetura MVC"],
   },
 ]
 
@@ -60,15 +59,15 @@ export default function About() {
     <section id="about" className="py-28">
       <h2 className="section-title mb-5 text-[22px]">Sobre mim</h2>
  
-      <p className="section-fade m-0 max-w-3xl opacity-0 translate-y-8 blur-[4px] transition-all duration-700 will-change-[transform,opacity,filter]">
+      <p className="section-fade m-0 max-w-3xl opacity-0 translate-y-8 blur-[4px] transition-all duration-700">
         Sou desenvolvedor com experiência em aplicações web, APIs e automação. Gosto de unir engenharia sólida com
         design e microinterações, mantendo performance e clareza como prioridades.
       </p>
 
       {/* Tabs para tópicos */}
-      <div className="section-fade mt-8 opacity-0 translate-y-8 blur-[4px] transition-all duration-700 will-change-[transform,opacity,filter]">
+      <div className="section-fade mt-8 opacity-0 translate-y-8 blur-[4px] transition-all duration-700">
         <Tabs defaultValue="academica" className="w-full">
-          <TabsList className="flex w-full justify-start gap-2 rounded-xl bg-white/5 p-1.5 backdrop-blur-sm">
+          <TabsList className="flex w-full justify-start gap-2 rounded-xl bg-white/5 p-1.5">
             <TabsTrigger
               value="academica"
               className="text-white/80 hover:text-white data-[state=active]:text-gray-900 data-[state=active]:bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.8))] data-[state=active]:border data-[state=active]:border-white/10 rounded-lg px-3 py-2 text-sm transition-colors duration-200"
@@ -93,7 +92,7 @@ export default function About() {
               {ACADEMIC.map((item, i) => (
                 <li
                   key={item.title + i}
-                  className="rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01))] p-5 shadow-[0_6px_30px_rgba(2,6,23,0.25)] backdrop-blur-md"
+                  className="rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01))] p-5 shadow-[0_6px_30px_rgba(2,6,23,0.25)]"
                 >
                   <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                     <div>
@@ -145,7 +144,7 @@ export default function About() {
               {PROFISSIONAL.map((item, i) => (
                 <li
                   key={item.role + i}
-                  className="rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01))] p-5 shadow-[0_6px_30px_rgba(2,6,23,0.25)] backdrop-blur-md"
+                  className="rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01))] p-5 shadow-[0_6px_30px_rgba(2,6,23,0.25)]"
                 >
                   <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                     <div>

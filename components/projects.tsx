@@ -1,10 +1,8 @@
-"use client"
-
 import type React from "react"
 
+import Image from "next/image"
 import Link from "next/link"
-import { projects } from "@/data/projects"
-import { useEffect, useRef } from "react"
+import { projects, type Project } from "@/data/projects"
 
 export default function Projects() {
   return (
@@ -15,46 +13,19 @@ export default function Projects() {
       </h2>
 
       <div className="projects mt-14 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {projects.map((p, index) => (
-          <ProjectCard key={p.slug} project={p} index={index} />
+        {projects.map((p) => (
+          <ProjectCard key={p.slug} project={p} />
         ))}
       </div>
     </section>
   )
 }
 
-interface Project {
-  slug: string
-  title: string
-  description: string
-  cover?: string
-  tags: string[]
-}
-
-function ProjectCard({ project, index }: { project: Project; index: number }) {
-  const cardRef = useRef<HTMLElement>(null)
-
-  useEffect(() => {
-    const card = cardRef.current
-    if (!card) return
-
-    const handleMouseMove = (e: MouseEvent) => {
-      const rect = card.getBoundingClientRect()
-      const x = e.clientX - rect.left
-      const y = e.clientY - rect.top
-
-      card.style.setProperty("--mouse-x", `${x}px`)
-      card.style.setProperty("--mouse-y", `${y}px`)
-    }
-
-    card.addEventListener("mousemove", handleMouseMove)
-    return () => card.removeEventListener("mousemove", handleMouseMove)
-  }, [])
-
+// O brilho (--mouse-x/--mouse-y) e o tilt são controlados pelo PageEffects via [data-tilt].
+function ProjectCard({ project }: { project: Project }) {
   return (
     <article
-      ref={cardRef}
-      className="project-card section-fade group relative transform-gpu overflow-hidden rounded-xl border border-white/10 bbg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.015))] shadow-[0_6px_30px_rgba(2,6,23,0.35)] backdrop-blur-md transition-all duration-500 opacity-0 translate-y-8 blur-[4px] hover:border-white/20"
+      className="project-card section-fade group relative transform-gpu overflow-hidden rounded-xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.015))] shadow-[0_6px_30px_rgba(2,6,23,0.35)] transition-all duration-500 opacity-0 translate-y-8 blur-[4px] hover:border-white/20"
       data-tilt
       aria-label={`Abrir projeto ${project.title}`}
       style={
@@ -74,14 +45,15 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
         />
       </div>
 
-      <div className="relative overflow-hidden">
+      <div className="relative h-56 overflow-hidden">
         <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-40" />
 
-        <img
-          src={project.cover || "/placeholder.svg"}
+        <Image
+          src={project.cover || "/placeholder.png"}
           alt={`Capa do projeto ${project.title}`}
-          className="h-56 w-full object-cover transition-all duration-700 ease-out group-hover:scale-110 group-hover:brightness-110"
-          loading="lazy"
+          fill
+          sizes="(min-width: 1024px) 340px, (min-width: 640px) 50vw, 100vw"
+          className="object-cover transition-all duration-700 ease-out group-hover:scale-110 group-hover:brightness-110"
         />
 
         <div className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-md opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:scale-110">
@@ -105,10 +77,10 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
         </p>
 
         <div className="flex flex-wrap gap-2">
-          {project.tags.map((tag: string, i: number) => (
+          {project.tags.map((tag, i) => (
             <span
               key={tag}
-              className="tag inline-flex items-center rounded-full border border-white/5 bg-white/5 px-3 py-1.5 text-xs font-medium text-[#9aa4b2] backdrop-blur-sm transition-all duration-300 hover:border-white/10 hover:bg-white/10 hover:text-[#b4bcc8]"
+              className="tag inline-flex items-center rounded-full border border-white/5 bg-white/5 px-3 py-1.5 text-xs font-medium text-[#9aa4b2] transition-all duration-300 hover:border-white/10 hover:bg-white/10 hover:text-[#b4bcc8]"
               style={{
                 transitionDelay: `${i * 30}ms`,
               }}
@@ -123,7 +95,7 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
 
       <Link
         href={`/projects/${project.slug}`}
-        className="absolute inset-0 z-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(139,92,246,0.12)]/70 rounded-xl"
+        className="absolute inset-0 z-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8b5cf6]/70 rounded-xl"
         aria-label={`Ver detalhes do projeto ${project.title}`}
       />
 

@@ -1,12 +1,12 @@
 "use client"
 
 import { useEffect, useRef } from "react"
+import { whenIdle } from "@/lib/idle"
 
 interface Tech {
   name: string
   color: string
   shadowColor?: string
-  icon?: string
 }
 
 interface OrbitCategory {
@@ -17,73 +17,107 @@ interface OrbitCategory {
   tilt: number
 }
 
-interface Star {
-  x: number
-  y: number
-  size: number
-  opacity: number
-  twinkleSpeed: number
-}
+const CATEGORIES: OrbitCategory[] = [
+  {
+    title: "O que eu uso no trabalho",
+    techs: [
+      { name: "Next.js", color: "#FFFFFF", shadowColor: "rgba(255, 255, 255, 0.3)" },
+      { name: "TypeScript", color: "#3178C6", shadowColor: "rgba(49, 120, 198, 0.4)" },
+      { name: "Express", color: "#339933", shadowColor: "rgba(51, 153, 51, 0.4)" },
+      { name: "MySQL", color: "#CC2927", shadowColor: "rgba(204, 41, 39, 0.4)" },
+      { name: "Docker", color: "#2496ED", shadowColor: "rgba(36, 150, 237, 0.4)" },
+      { name: "Tailwind", color: "#38BDF8", shadowColor: "rgba(56, 189, 248, 0.4)" },
+      { name: "Figma", color: "#F24E1E", shadowColor: "rgba(242, 78, 30, 0.4)" },
+      { name: "Postman", color: "#FF6C37", shadowColor: "rgba(255, 108, 55, 0.4)" },
+      { name: "GitHub", color: "#E6EDF3", shadowColor: "rgba(230, 237, 243, 0.3)" },
+      { name: "React Native", color: "#3FA9F5", shadowColor: "rgba(63, 169, 245, 0.4)" },
+    ],
+    radiusRatio: 0.35, // 35% do raio base
+    speed: 0.0005,
+    tilt: 0.6,
+  },
+  {
+    title: "O que eu uso e estudo na faculdade",
+    techs: [
+      { name: "Python", color: "#3776AB", shadowColor: "rgba(55, 118, 171, 0.4)" },
+      { name: "React", color: "#61DAFB", shadowColor: "rgba(97, 218, 251, 0.4)" },
+      { name: "Flask", color: "#FFFFFF", shadowColor: "rgba(255, 255, 255, 0.3)" },
+      { name: "Postgres", color: "#336791", shadowColor: "rgba(51, 103, 145, 0.4)" },
+      { name: "Kotlin", color: "#A97BFF", shadowColor: "rgba(169, 123, 255, 0.4)" },
+    ],
+    radiusRatio: 0.55, // 55% do raio base
+    speed: 0.0004,
+    tilt: 0.5,
+  },
+  {
+    title: "O que eu estudo para desenvolvimento pessoal",
+    techs: [
+      { name: "Java", color: "#ED8B00", shadowColor: "rgba(237, 139, 0, 0.4)" },
+      { name: "Spring Boot", color: "#6DB33F", shadowColor: "rgba(109, 179, 63, 0.4)" },
+      { name: "Nest.js", color: "#E0234E", shadowColor: "rgba(224, 35, 78, 0.4)" },
+      { name: "MongoDB", color: "#47A248", shadowColor: "rgba(71, 162, 72, 0.4)" },
+    ],
+    radiusRatio: 0.75, // 75% do raio base
+    speed: 0.0003,
+    tilt: 0.4,
+  },
+]
 
-interface Particle {
-  x: number
-  y: number
-  vx: number
-  vy: number
-  life: number
-  maxLife: number
-  color: string
+const MAX_SCALE = 1.3 // escala do ícone mais próximo (z = 1)
+
+// Pré-renderiza o ícone de uma tecnologia (4 gradientes) no tamanho máximo.
+// A cada frame ele só é copiado e reduzido com drawImage, sem recriar gradientes.
+function renderTechSprite(tech: Tech, scaleFactor: number, dpr: number) {
+  const iconSize = 32 * MAX_SCALE * scaleFactor
+  const glowSize = iconSize * 1.75
+  const half = glowSize
+  const sprite = document.createElement("canvas")
+  sprite.width = sprite.height = Math.ceil(half * 2 * dpr)
+  const ctx = sprite.getContext("2d")!
+  ctx.scale(dpr, dpr)
+  const x = half
+  const y = half
+
+  const shadowColor = tech.shadowColor || `${tech.color}40`
+  const glowGradient = ctx.createRadialGradient(x, y, 0, x, y, glowSize)
+  glowGradient.addColorStop(0, shadowColor)
+  glowGradient.addColorStop(0.5, shadowColor.replace(/[\d.]+\)$/, "0.2)"))
+  glowGradient.addColorStop(1, shadowColor.replace(/[\d.]+\)$/, "0)"))
+  ctx.fillStyle = glowGradient
+  ctx.beginPath()
+  ctx.arc(x, y, glowSize, 0, Math.PI * 2)
+  ctx.fill()
+
+  const outerGlow = ctx.createRadialGradient(x, y, iconSize / 2, x, y, iconSize / 2 + 8 * scaleFactor)
+  outerGlow.addColorStop(0, "rgba(255, 255, 255, 0.02)")
+  outerGlow.addColorStop(1, "rgba(255, 255, 255, 0)")
+  ctx.fillStyle = outerGlow
+  ctx.beginPath()
+  ctx.arc(x, y, iconSize / 2 + 8 * scaleFactor, 0, Math.PI * 2)
+  ctx.fill()
+
+  const bgGradient = ctx.createLinearGradient(x, y - iconSize / 2, x, y + iconSize / 2)
+  bgGradient.addColorStop(0, "rgba(255, 255, 255, 0.02)")
+  bgGradient.addColorStop(1, "rgba(255, 255, 255, 0.01)")
+  ctx.fillStyle = bgGradient
+  ctx.beginPath()
+  ctx.arc(x, y, iconSize / 2, 0, Math.PI * 2)
+  ctx.fill()
+
+  const innerGlow = ctx.createRadialGradient(x, y, 0, x, y, iconSize / 2 - 4 * scaleFactor)
+  innerGlow.addColorStop(0, tech.color)
+  innerGlow.addColorStop(0.6, `${tech.color}80`)
+  innerGlow.addColorStop(1, "rgba(255, 255, 255, 0.05)")
+  ctx.fillStyle = innerGlow
+  ctx.beginPath()
+  ctx.arc(x, y, iconSize / 2 - 4 * scaleFactor, 0, Math.PI * 2)
+  ctx.fill()
+
+  return { sprite, half }
 }
 
 export default function EnhancedTechStack() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-
-  const categories: OrbitCategory[] = [
-    {
-      title: "O que eu uso no trabalho",
-      techs: [
-        { name: "Next.js", color: "#FFFFFF", shadowColor: "rgba(255, 255, 255, 0.3)" },
-        { name: "TypeScript", color: "#3178C6", shadowColor: "rgba(49, 120, 198, 0.4)" },
-        { name: "Express", color: "#339933", shadowColor: "rgba(51, 153, 51, 0.4)" },
-        { name: "MySQL", color: "#CC2927", shadowColor: "rgba(204, 41, 39, 0.4)" },
-        { name: "Docker", color: "#2496ED", shadowColor: "rgba(36, 150, 237, 0.4)" },
-        { name: "Tailwind", color: "#38BDF8", shadowColor: "rgba(56, 189, 248, 0.4)" },
-        { name: "Figma", color: "#F24E1E", shadowColor: "rgba(242, 78, 30, 0.4)" },
-        { name: "Postman", color: "#FF6C37", shadowColor: "rgba(255, 108, 55, 0.4)" },
-        { name: "GitHub", color: "#181717", shadowColor: "rgba(24, 23, 23, 0.4)" },
-        { name: "React Native", color: "#3FA9F5", shadowColor: "rgba(63, 169, 245, 0.4)"}
-
-      ],
-      radiusRatio: 0.35, // 35% of base radius
-      speed: 0.0005,
-      tilt: 0.6,
-    },
-    {
-      title: "O que eu uso e estudo na faculdade",
-      techs: [
-        { name: "Python", color: "#3776AB", shadowColor: "rgba(55, 118, 171, 0.4)" },
-        { name: "React", color: "#61DAFB", shadowColor: "rgba(97, 218, 251, 0.4)" },
-        { name: "Flask", color: "#FFFFFF", shadowColor: "rgba(255, 255, 255, 0.3)" },
-        { name: "Postgres", color: "#336791", shadowColor: "rgba(51, 103, 145, 0.4)" },
-        { name: "Kotlin", color: "#A97BFF", shadowColor: "rgba(169, 123, 255, 0.4)" },
-      ],
-      radiusRatio: 0.55, // 55% of base radius
-      speed: 0.0004,
-      tilt: 0.5,
-    },
-    {
-      title: "O que eu estudo para desenvolvimento pessoal",
-      techs: [
-        { name: "Java", color: "#ED8B00", shadowColor: "rgba(237, 139, 0, 0.4)" },
-        { name: "Spring Boot", color: "#6DB33F", shadowColor: "rgba(109, 179, 63, 0.4)" },
-        { name: "Nest.js", color: "#E0234E", shadowColor: "rgba(224, 35, 78, 0.4)" },
-        { name: "MongoDB", color: "#47A248", shadowColor: "rgba(71, 162, 72, 0.4)" },
-      ],
-      radiusRatio: 0.75, // 75% of base radius
-      speed: 0.0003,
-      tilt: 0.4,
-    },
-  ]
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -92,32 +126,49 @@ export default function EnhancedTechStack() {
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
-    const resizeCanvas = () => {
-      const dpr = window.devicePixelRatio || 1
-      const rect = canvas.getBoundingClientRect()
-      canvas.width = rect.width * dpr
-      canvas.height = rect.height * dpr
-      ctx.scale(dpr, dpr)
-      canvas.style.width = `${rect.width}px`
-      canvas.style.height = `${rect.height}px`
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+
+    // Tudo que só depende do tamanho do canvas é calculado aqui, não a cada frame.
+    let width = 0
+    let height = 0
+    let baseRadius = 0
+    let scaleFactor = 0
+    let sprites: { sprite: HTMLCanvasElement; half: number }[][] = []
+    let ringGradients: CanvasGradient[] = []
+
+    const resize = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      width = canvas.clientWidth
+      height = canvas.clientHeight
+      canvas.width = Math.round(width * dpr)
+      canvas.height = Math.round(height * dpr)
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+
+      baseRadius = Math.min(width, height) * 0.38
+      scaleFactor = baseRadius / 280
+      sprites = CATEGORIES.map((c) => c.techs.map((t) => renderTechSprite(t, scaleFactor, dpr)))
+      ringGradients = CATEGORIES.map((c) => {
+        const radius = baseRadius * c.radiusRatio
+        const g = ctx.createRadialGradient(
+          width / 2,
+          height / 2,
+          radius - 2 * scaleFactor,
+          width / 2,
+          height / 2,
+          radius + 2 * scaleFactor,
+        )
+        g.addColorStop(0, "rgba(139, 92, 246, 0.15)")
+        g.addColorStop(0.5, "rgba(255, 255, 255, 0.08)")
+        g.addColorStop(1, "rgba(6, 182, 212, 0.15)")
+        return g
+      })
     }
 
-    resizeCanvas()
-    window.addEventListener("resize", resizeCanvas)
+    const draw = (elapsed: number) => {
+      const centerX = width / 2
+      const centerY = height / 2
 
-    let animationFrameId: number
-    const startTime = Date.now()
-
-    const animate = () => {
-      const elapsed = Date.now() - startTime
-      const rect = canvas.getBoundingClientRect()
-      const centerX = rect.width / 2
-      const centerY = rect.height / 2
-
-      const baseRadius = Math.min(rect.width, rect.height) * 0.38
-      const scaleFactor = baseRadius / 280 // Reduzido de 300 para 280 para elementos maiores
-
-      ctx.clearRect(0, 0, rect.width, rect.height)
+      ctx.clearRect(0, 0, width, height)
 
       const pulseScale = Math.sin(elapsed * 0.002) * 0.15 + 1
 
@@ -216,25 +267,12 @@ export default function EnhancedTechStack() {
         ctx.fill()
       }
 
-      categories.forEach((category) => {
+      CATEGORIES.forEach((category, c) => {
         const radius = baseRadius * category.radiusRatio
 
-        const ringGradient = ctx.createRadialGradient(
-          centerX,
-          centerY,
-          radius - 2 * scaleFactor,
-          centerX,
-          centerY,
-          radius + 2 * scaleFactor,
-        )
-        ringGradient.addColorStop(0, "rgba(139, 92, 246, 0.15)")
-        ringGradient.addColorStop(0.5, "rgba(255, 255, 255, 0.08)")
-        ringGradient.addColorStop(1, "rgba(6, 182, 212, 0.15)")
-
-        ctx.strokeStyle = ringGradient
+        ctx.strokeStyle = ringGradients[c]
         ctx.lineWidth = 2 * scaleFactor
         ctx.beginPath()
-
         ctx.ellipse(centerX, centerY, radius, radius * category.tilt, 0, 0, Math.PI * 2)
         ctx.stroke()
 
@@ -245,7 +283,8 @@ export default function EnhancedTechStack() {
         ctx.stroke()
       })
 
-      categories.forEach((category) => {
+      ctx.textAlign = "center"
+      CATEGORIES.forEach((category, c) => {
         const radius = baseRadius * category.radiusRatio
 
         category.techs.forEach((tech, index) => {
@@ -258,41 +297,9 @@ export default function EnhancedTechStack() {
           const scale = 0.8 + z * 0.5
           const iconSize = 32 * scale * scaleFactor
 
-          const shadowColor = tech.shadowColor || `${tech.color}40`
-          const glowSize = iconSize * 1.75
-          const glowGradient = ctx.createRadialGradient(x, y, 0, x, y, glowSize)
-          glowGradient.addColorStop(0, shadowColor)
-          glowGradient.addColorStop(0.5, shadowColor.replace(/[\d.]+\)$/, "0.2)"))
-          glowGradient.addColorStop(1, shadowColor.replace(/[\d.]+\)$/, "0)"))
-          ctx.fillStyle = glowGradient
-          ctx.beginPath()
-          ctx.arc(x, y, glowSize, 0, Math.PI * 2)
-          ctx.fill()
-
-          const outerGlow = ctx.createRadialGradient(x, y, iconSize / 2, x, y, iconSize / 2 + 8 * scaleFactor)
-          outerGlow.addColorStop(0, "rgba(255, 255, 255, 0.02)")
-          outerGlow.addColorStop(1, "rgba(255, 255, 255, 0)")
-          ctx.fillStyle = outerGlow
-          ctx.beginPath()
-          ctx.arc(x, y, iconSize / 2 + 8 * scaleFactor, 0, Math.PI * 2)
-          ctx.fill()
-
-          const bgGradient = ctx.createLinearGradient(x, y - iconSize / 2, x, y + iconSize / 2)
-          bgGradient.addColorStop(0, "rgba(255, 255, 255, 0.02)")
-          bgGradient.addColorStop(1, "rgba(255, 255, 255, 0.01)")
-          ctx.fillStyle = bgGradient
-          ctx.beginPath()
-          ctx.arc(x, y, iconSize / 2, 0, Math.PI * 2)
-          ctx.fill()
-
-          const innerGlow = ctx.createRadialGradient(x, y, 0, x, y, iconSize / 2 - 4 * scaleFactor)
-          innerGlow.addColorStop(0, tech.color)
-          innerGlow.addColorStop(0.6, `${tech.color}80`)
-          innerGlow.addColorStop(1, "rgba(255, 255, 255, 0.05)")
-          ctx.fillStyle = innerGlow
-          ctx.beginPath()
-          ctx.arc(x, y, iconSize / 2 - 4 * scaleFactor, 0, Math.PI * 2)
-          ctx.fill()
+          const { sprite, half } = sprites[c][index]
+          const k = scale / MAX_SCALE
+          ctx.drawImage(sprite, x - half * k, y - half * k, half * 2 * k, half * 2 * k)
 
           ctx.strokeStyle = `rgba(255, 255, 255, ${0.1 + z * 0.05})`
           ctx.lineWidth = 1.5 * scaleFactor
@@ -306,28 +313,65 @@ export default function EnhancedTechStack() {
           ctx.arc(x, y, iconSize / 2 - 2 * scaleFactor, 0, Math.PI * 2)
           ctx.stroke()
 
-          ctx.save()
           ctx.globalAlpha = 0.7 + z * 0.3
+          ctx.font = `${Math.max(10, 12 * scale * scaleFactor)}px sans-serif`
           ctx.fillStyle = "rgba(0, 0, 0, 0.5)"
-          const fontSize = Math.max(10, 12 * scale * scaleFactor)
-          ctx.font = `${fontSize}px sans-serif`
-          ctx.textAlign = "center"
           ctx.fillText(tech.name, x + 1, y + iconSize + 14 * scaleFactor)
-
           ctx.fillStyle = "#9aa4b2"
           ctx.fillText(tech.name, x, y + iconSize + 13 * scaleFactor)
-          ctx.restore()
+          ctx.globalAlpha = 1
         })
       })
-
-      animationFrameId = requestAnimationFrame(animate)
     }
 
-    animate()
+    // Loop só roda enquanto a seção está visível. O tempo pausado não conta, então nada "salta" ao voltar.
+    let frameId = 0
+    let elapsed = 0
+    let last = 0
+    let ready = false // só anima depois do carregamento (ver whenIdle)
+    let visible = false
+    const tick = (now: number) => {
+      if (last) elapsed += now - last
+      last = now
+      draw(elapsed)
+      frameId = requestAnimationFrame(tick)
+    }
+    const play = () => {
+      if (frameId || reduced || !ready || !visible) return
+      last = 0
+      frameId = requestAnimationFrame(tick)
+    }
+    const pause = () => {
+      cancelAnimationFrame(frameId)
+      frameId = 0
+    }
+
+    const ro = new ResizeObserver(() => {
+      resize()
+      draw(elapsed)
+    })
+    ro.observe(canvas)
+
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        visible = entry.isIntersecting
+        if (visible) play()
+        else pause()
+      },
+      { rootMargin: "100px" },
+    )
+    io.observe(canvas)
+
+    const cancelIdle = whenIdle(() => {
+      ready = true
+      play()
+    })
 
     return () => {
-      window.removeEventListener("resize", resizeCanvas)
-      cancelAnimationFrame(animationFrameId)
+      cancelIdle()
+      pause()
+      ro.disconnect()
+      io.disconnect()
     }
   }, [])
 
@@ -342,14 +386,14 @@ export default function EnhancedTechStack() {
         <div className="mb-6 flex justify-center sm:mb-8">
           <canvas
             ref={canvasRef}
-            className="h-[700px] w-full max-w-[1000px] sm:h-[750px] md:h-[850px] lg:h-[900px]"
-            style={{ maxHeight: "900px" }}
+            aria-hidden
+            className="aspect-square max-h-[900px] w-full max-w-[1000px]"
           />
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-3 lg:gap-6">
-          {categories.map((category, idx) => (
-            <div key={idx} className="rounded-xl border border-white/5 bg-white/[0.02] p-4 sm:p-5">
+          {CATEGORIES.map((category) => (
+            <div key={category.title} className="rounded-xl border border-white/5 bg-white/[0.02] p-4 sm:p-5">
               <h3 className="mb-3 text-sm font-semibold text-[#e6eef8] sm:text-base">{category.title}</h3>
               <div className="flex flex-wrap gap-2">
                 {category.techs.map((tech) => (
