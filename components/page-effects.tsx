@@ -274,7 +274,7 @@ export default function PageEffects() {
                 links.forEach((a) => {
                     const isActive = a.getAttribute("href") === `#${current}`
                     a.parentElement?.classList.toggle("font-bold", isActive)
-                    a.parentElement?.classList.toggle("text-[#8b5cf6]", isActive)
+                    a.parentElement?.classList.toggle("text-[#3b82f6]", isActive)
                 })
                 const active = menu.querySelector<HTMLAnchorElement>(`a[href="#${current}"]`)
                 if (!active) return
@@ -360,16 +360,16 @@ export default function PageEffects() {
 
     return (
         <>
-            <canvas ref={canvasRef} aria-hidden className="fixed inset-0 z-0 h-full w-full pointer-events-none opacity-0 transition-opacity duration-1000" />
+            <canvas ref={canvasRef} aria-hidden className="print:hidden fixed inset-0 z-0 h-full w-full pointer-events-none opacity-0 transition-opacity duration-1000" />
             <div
                 ref={progressRef}
                 aria-hidden
-                className="fixed left-0 top-0 h-[3px] w-full origin-left scale-x-0 z-[60] bg-gradient-to-r from-[#8b5cf6] to-[#06b6d4] shadow-[0_0_20px_rgba(139,92,246,0.35)] pointer-events-none"
+                className="print:hidden fixed left-0 top-0 h-[3px] w-full origin-left scale-x-0 z-[60] bg-gradient-to-r from-[#3b82f6] to-[#7dd3fc] shadow-[0_0_20px_rgba(59,130,246,0.35)] pointer-events-none"
             />
             <div
                 ref={cursorRef}
                 aria-hidden
-                className="fixed left-0 top-0 w-[22px] h-[22px] rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none z-[70] backdrop-blur-sm border border-white/20 opacity-0 transition-[width,height,background,opacity] duration-200"
+                className="print:hidden fixed left-0 top-0 w-[22px] h-[22px] rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none z-[70] backdrop-blur-sm border border-white/20 opacity-0 transition-[width,height,background,opacity] duration-200"
                 style={{ background: CURSOR_IDLE }}
             />
         </>

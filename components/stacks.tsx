@@ -3,68 +3,9 @@
 import { useEffect, useRef } from "react"
 import { whenIdle } from "@/lib/idle"
 
-interface Tech {
-  name: string
-  color: string
-  shadowColor?: string
-}
-
-interface OrbitCategory {
-  title: string
-  techs: Tech[]
-  radiusRatio: number
-  speed: number
-  tilt: number
-}
-
-const CATEGORIES: OrbitCategory[] = [
-  {
-    title: "O que eu uso no trabalho",
-    techs: [
-      { name: "Node.js", color: "#5FA04E", shadowColor: "rgba(95, 160, 78, 0.4)" },
-      { name: "Express", color: "#E6EDF3", shadowColor: "rgba(230, 237, 243, 0.3)" },
-      { name: "MySQL", color: "#00758F", shadowColor: "rgba(0, 117, 143, 0.45)" },
-      { name: "Redis", color: "#DC382D", shadowColor: "rgba(220, 56, 45, 0.4)" },
-      { name: "Docker", color: "#2496ED", shadowColor: "rgba(36, 150, 237, 0.4)" },
-      { name: "Angular", color: "#DD0031", shadowColor: "rgba(221, 0, 49, 0.4)" },
-      { name: "GitHub", color: "#E6EDF3", shadowColor: "rgba(230, 237, 243, 0.3)" },
-      { name: "Postman", color: "#FF6C37", shadowColor: "rgba(255, 108, 55, 0.4)" },
-    ],
-    radiusRatio: 0.35, // 35% do raio base
-    speed: 0.0005,
-    tilt: 0.6,
-  },
-  {
-    title: "O que eu uso em projetos e na faculdade",
-    techs: [
-      { name: "TypeScript", color: "#3178C6", shadowColor: "rgba(49, 120, 198, 0.4)" },
-      { name: "Next.js", color: "#FFFFFF", shadowColor: "rgba(255, 255, 255, 0.3)" },
-      { name: "React", color: "#61DAFB", shadowColor: "rgba(97, 218, 251, 0.4)" },
-      { name: "Tailwind", color: "#38BDF8", shadowColor: "rgba(56, 189, 248, 0.4)" },
-      { name: "NestJS", color: "#E0234E", shadowColor: "rgba(224, 35, 78, 0.4)" },
-      { name: "Python", color: "#3776AB", shadowColor: "rgba(55, 118, 171, 0.4)" },
-      { name: "Flask", color: "#FFFFFF", shadowColor: "rgba(255, 255, 255, 0.3)" },
-      { name: "PostgreSQL", color: "#336791", shadowColor: "rgba(51, 103, 145, 0.4)" },
-    ],
-    radiusRatio: 0.55, // 55% do raio base
-    speed: 0.0004,
-    tilt: 0.5,
-  },
-  {
-    title: "O que eu estudo para desenvolvimento pessoal",
-    techs: [
-      { name: "Java", color: "#ED8B00", shadowColor: "rgba(237, 139, 0, 0.4)" },
-      { name: "Spring Boot", color: "#6DB33F", shadowColor: "rgba(109, 179, 63, 0.4)" },
-      { name: "Go", color: "#00ADD8", shadowColor: "rgba(0, 173, 216, 0.4)" },
-      { name: "FastAPI", color: "#009688", shadowColor: "rgba(0, 150, 136, 0.4)" },
-      { name: "MongoDB", color: "#47A248", shadowColor: "rgba(71, 162, 72, 0.4)" },
-      { name: "Kotlin", color: "#A97BFF", shadowColor: "rgba(169, 123, 255, 0.4)" },
-    ],
-    radiusRatio: 0.75, // 75% do raio base
-    speed: 0.0003,
-    tilt: 0.4,
-  },
-]
+import { CATEGORIES, type Tech } from "@/data/techs"
+import { getDictionary } from "@/content/dictionaries"
+import type { Locale } from "@/lib/i18n"
 
 const MAX_SCALE = 1.3 // escala do ícone mais próximo (z = 1)
 
@@ -119,7 +60,10 @@ function renderTechSprite(tech: Tech, scaleFactor: number, dpr: number) {
   return { sprite, half }
 }
 
-export default function EnhancedTechStack() {
+export default function EnhancedTechStack({ locale }: { locale: Locale }) {
+  const t = getDictionary(locale).stacks
+  // Rótulos curtos das categorias, lidos pelo canvas (o efeito roda uma vez só)
+  const shortRef = useRef(t.short)
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -136,7 +80,11 @@ export default function EnhancedTechStack() {
     let height = 0
     let baseRadius = 0
     let scaleFactor = 0
+    // Telas estreitas: órbitas mais "redondas" (aproveitam a altura) e com mais espaço entre planetas
+    let tiltBoost = 1
     let sprites: { sprite: HTMLCanvasElement; half: number }[][] = []
+    let labelWidths: number[][] = []
+    let currentFont = ""
     let ringGradients: CanvasGradient[] = []
 
     const resize = () => {
@@ -147,9 +95,16 @@ export default function EnhancedTechStack() {
       canvas.height = Math.round(height * dpr)
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
-      baseRadius = Math.min(width, height) * 0.38
-      scaleFactor = baseRadius / 280
+      // Adaptativo: no celular o raio usa mais da largura e ícones/nomes têm um tamanho mínimo legível
+      const compact = width < 720 // celular e tablet
+      baseRadius = Math.min(width, height) * (compact ? 0.45 : 0.38)
+      scaleFactor = compact ? Math.max(baseRadius / 280, 0.62) : baseRadius / 280
+      tiltBoost = compact ? 1.5 : 1
       sprites = CATEGORIES.map((c) => c.techs.map((t) => renderTechSprite(t, scaleFactor, dpr)))
+      // Largura de cada nome a 12px, medida uma vez: a detecção de colisão escala a partir daqui
+      ctx.font = "12px sans-serif"
+      labelWidths = CATEGORIES.map((c) => c.techs.map((t) => ctx.measureText(t.name).width))
+      currentFont = ""
       ringGradients = CATEGORIES.map((c) => {
         const radius = baseRadius * c.radiusRatio
         const g = ctx.createRadialGradient(
@@ -160,15 +115,16 @@ export default function EnhancedTechStack() {
           height / 2,
           radius + 2 * scaleFactor,
         )
-        g.addColorStop(0, "rgba(139, 92, 246, 0.15)")
+        g.addColorStop(0, "rgba(59,130,246, 0.15)")
         g.addColorStop(0.5, "rgba(255, 255, 255, 0.08)")
-        g.addColorStop(1, "rgba(6, 182, 212, 0.15)")
+        g.addColorStop(1, "rgba(125,211,252, 0.15)")
         return g
       })
     }
 
     // Sinapses núcleo → planeta e o "acender" de cada planeta
     type Synapse = { c: number; i: number; t: number; speed: number }
+    type Planet = { c: number; i: number; x: number; y: number; z: number; scale: number; iconSize: number }
     const synapses: Synapse[] = []
     const flash = CATEGORIES.map((c) => c.techs.map(() => 0))
     const lastHoverFire = CATEGORIES.map((c) => c.techs.map(() => -Infinity))
@@ -176,14 +132,15 @@ export default function EnhancedTechStack() {
     let hover: { x: number; y: number } | null = null
     let prevElapsed = 0
 
-    const draw = (elapsed: number) => {
-      const dt = Math.min(64, Math.max(0, elapsed - prevElapsed))
-      prevElapsed = elapsed
-      const centerX = width / 2
-      const centerY = height / 2
+    // Foco: planeta sob o ponteiro. A órbita desacelera enquanto há foco, para o nome poder ser lido.
+    let focus: { c: number; i: number } | null = null
+    let focusAmount = 0 // 0 → 1, suaviza a entrada/saída do destaque
+    let orbitTime = 0
+    let orbitSpeed = 1
 
-      ctx.clearRect(0, 0, width, height)
+    const tiltOf = (category: { tilt: number }) => Math.min(0.92, category.tilt * tiltBoost)
 
+    const drawCore = (elapsed: number, centerX: number, centerY: number) => {
       const pulseScale = Math.sin(elapsed * 0.002) * 0.15 + 1
 
       for (let i = 0; i < 3; i++) {
@@ -194,7 +151,7 @@ export default function EnhancedTechStack() {
         ctx.translate(centerX, centerY)
         ctx.rotate(ringAngle)
 
-        ctx.strokeStyle = `rgba(139, 92, 246, ${0.4 - i * 0.1})`
+        ctx.strokeStyle = `rgba(59,130,246, ${0.4 - i * 0.1})`
         ctx.lineWidth = 2 * scaleFactor
         ctx.beginPath()
         ctx.ellipse(0, 0, ringRadius, ringRadius * 0.3, 0, 0, Math.PI * 2)
@@ -203,17 +160,9 @@ export default function EnhancedTechStack() {
         const electronAngle = elapsed * 0.003 * (i % 2 === 0 ? 1 : -1)
         const electronX = Math.cos(electronAngle) * ringRadius
         const electronY = Math.sin(electronAngle) * ringRadius * 0.3
-
-        const electronGradient = ctx.createRadialGradient(
-          electronX,
-          electronY,
-          0,
-          electronX,
-          electronY,
-          4 * scaleFactor,
-        )
-        electronGradient.addColorStop(0, "rgba(6, 182, 212, 1)")
-        electronGradient.addColorStop(1, "rgba(6, 182, 212, 0.3)")
+        const electronGradient = ctx.createRadialGradient(electronX, electronY, 0, electronX, electronY, 4 * scaleFactor)
+        electronGradient.addColorStop(0, "rgba(125,211,252, 1)")
+        electronGradient.addColorStop(1, "rgba(125,211,252, 0.3)")
         ctx.fillStyle = electronGradient
         ctx.beginPath()
         ctx.arc(electronX, electronY, 4 * scaleFactor, 0, Math.PI * 2)
@@ -223,9 +172,9 @@ export default function EnhancedTechStack() {
       }
 
       const energyGlow = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 60 * pulseScale * scaleFactor)
-      energyGlow.addColorStop(0, "rgba(139, 92, 246, 0.3)")
-      energyGlow.addColorStop(0.5, "rgba(6, 182, 212, 0.15)")
-      energyGlow.addColorStop(1, "rgba(139, 92, 246, 0)")
+      energyGlow.addColorStop(0, "rgba(59,130,246, 0.3)")
+      energyGlow.addColorStop(0.5, "rgba(125,211,252, 0.15)")
+      energyGlow.addColorStop(1, "rgba(59,130,246, 0)")
       ctx.fillStyle = energyGlow
       ctx.beginPath()
       ctx.arc(centerX, centerY, 60 * pulseScale * scaleFactor, 0, Math.PI * 2)
@@ -235,9 +184,9 @@ export default function EnhancedTechStack() {
 
       const outerCore = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, coreSize)
       outerCore.addColorStop(0, "rgba(255, 255, 255, 1)")
-      outerCore.addColorStop(0.3, "rgba(139, 92, 246, 0.9)")
-      outerCore.addColorStop(0.7, "rgba(6, 182, 212, 0.8)")
-      outerCore.addColorStop(1, "rgba(139, 92, 246, 0.5)")
+      outerCore.addColorStop(0.3, "rgba(59,130,246, 0.9)")
+      outerCore.addColorStop(0.7, "rgba(125,211,252, 0.8)")
+      outerCore.addColorStop(1, "rgba(59,130,246, 0.5)")
       ctx.fillStyle = outerCore
       ctx.beginPath()
       ctx.arc(centerX, centerY, coreSize, 0, Math.PI * 2)
@@ -245,8 +194,8 @@ export default function EnhancedTechStack() {
 
       const innerCore = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, coreSize * 0.6)
       innerCore.addColorStop(0, "rgba(255, 255, 255, 1)")
-      innerCore.addColorStop(0.5, "rgba(139, 92, 246, 1)")
-      innerCore.addColorStop(1, "rgba(6, 182, 212, 0.9)")
+      innerCore.addColorStop(0.5, "rgba(59,130,246, 1)")
+      innerCore.addColorStop(1, "rgba(125,211,252, 0.9)")
       ctx.fillStyle = innerCore
       ctx.beginPath()
       ctx.arc(centerX, centerY, coreSize * 0.6, 0, Math.PI * 2)
@@ -264,81 +213,236 @@ export default function EnhancedTechStack() {
         const particleDistance = (45 + Math.sin(elapsed * 0.003 + i) * 5) * scaleFactor
         const particleX = centerX + Math.cos(particleAngle) * particleDistance
         const particleY = centerY + Math.sin(particleAngle) * particleDistance
-
-        const particleGradient = ctx.createRadialGradient(
-          particleX,
-          particleY,
-          0,
-          particleX,
-          particleY,
-          3 * scaleFactor,
-        )
-        particleGradient.addColorStop(0, "rgba(6, 182, 212, 0.8)")
-        particleGradient.addColorStop(1, "rgba(6, 182, 212, 0)")
+        const particleGradient = ctx.createRadialGradient(particleX, particleY, 0, particleX, particleY, 3 * scaleFactor)
+        particleGradient.addColorStop(0, "rgba(125,211,252, 0.8)")
+        particleGradient.addColorStop(1, "rgba(125,211,252, 0)")
         ctx.fillStyle = particleGradient
         ctx.beginPath()
         ctx.arc(particleX, particleY, 3 * scaleFactor, 0, Math.PI * 2)
         ctx.fill()
       }
+    }
 
+    // Rótulos que venceram a disputa de espaço neste frame (ver draw)
+    let labelOk = new Set<string>()
+    // Opacidade atual de cada rótulo, suavizada entre frames (evita piscar quando a disputa muda)
+    const labelFade = CATEGORIES.map((c) => c.techs.map(() => 0.3))
+
+    const drawPlanet = (p: Planet) => {
+      const tech = CATEGORIES[p.c].techs[p.i]
+      const focused = focus?.c === p.c && focus?.i === p.i
+      // Com foco em outro planeta, este esmaece; sem foco, fica normal
+      const dim = focused ? 0 : focusAmount
+      const grow = focused ? 1 + 0.18 * focusAmount : 1
+      const scale = p.scale * grow
+      const iconSize = p.iconSize * grow
+      const { x, y } = p
+
+      ctx.globalAlpha = 1 - dim * 0.6
+      const { sprite, half } = sprites[p.c][p.i]
+      const k = scale / MAX_SCALE
+      ctx.drawImage(sprite, x - half * k, y - half * k, half * 2 * k, half * 2 * k)
+
+      // Planeta atingido por uma sinapse: acende e emite um anel
+      const f = (flash[p.c][p.i] *= 0.955)
+      if (f > 0.03) {
+        ctx.save()
+        ctx.globalCompositeOperation = "lighter"
+        ctx.fillStyle = `rgba(125,211,252, ${f * 0.35})`
+        ctx.beginPath()
+        ctx.arc(x, y, iconSize / 2 + 4 * scaleFactor, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.strokeStyle = `rgba(125,211,252, ${f * 0.8})`
+        ctx.lineWidth = 1.5 * scaleFactor
+        ctx.beginPath()
+        ctx.arc(x, y, iconSize / 2 + (1 - f) * 18 * scaleFactor, 0, Math.PI * 2)
+        ctx.stroke()
+        ctx.restore()
+      }
+
+      ctx.strokeStyle = focused ? `rgba(125,211,252, ${0.5 + 0.5 * focusAmount})` : `rgba(255, 255, 255, ${0.1 + p.z * 0.05})`
+      ctx.lineWidth = (focused ? 2 : 1.5) * scaleFactor
+      ctx.beginPath()
+      ctx.arc(x, y, iconSize / 2, 0, Math.PI * 2)
+      ctx.stroke()
+
+      ctx.strokeStyle = `rgba(255, 255, 255, ${0.15 + p.z * 0.1})`
+      ctx.lineWidth = 1 * scaleFactor
+      ctx.beginPath()
+      ctx.arc(x, y, iconSize / 2 - 2 * scaleFactor, 0, Math.PI * 2)
+      ctx.stroke()
+
+      if (focused) {
+        drawFocusLabel(tech.name, shortRef.current[p.c], x, y + iconSize / 2 + 12 * scaleFactor)
+      } else {
+        // Nome discreto: os planetas da frente ficam legíveis, os de trás quase somem
+        // e um nome que colidiria com outro mais à frente praticamente some
+        const depthAlpha = labelOk.has(p.c + "-" + p.i) ? (p.z < 0.5 ? 0.16 + p.z * 0.2 : 0.35 + (p.z - 0.5) * 1.2) : 0.05
+        const target = Math.min(1, Math.max(0.05, depthAlpha * (1 - dim * 0.85) + f * 0.4))
+        const alpha = (labelFade[p.c][p.i] += (target - labelFade[p.c][p.i]) * 0.12)
+        if (alpha > 0.07) {
+          ctx.globalAlpha = alpha
+          // Tamanho arredondado: trocar ctx.font custa caro, então só troca quando o tamanho muda de fato
+          const font = `${Math.round(Math.max(10, 12 * p.scale * scaleFactor))}px sans-serif`
+          if (font !== currentFont) {
+            ctx.font = font
+            currentFont = font
+          }
+          ctx.fillStyle = f > 0.1 ? "#e6eef8" : "#9aa4b2"
+          ctx.fillText(tech.name, x, y + iconSize + 13 * scaleFactor)
+        }
+      }
+      ctx.globalAlpha = 1
+    }
+
+    // Rótulo de vidro do planeta em foco: nome em destaque + categoria
+    const drawFocusLabel = (name: string, category: string, x: number, top: number) => {
+      const nameSize = Math.max(13, 15 * scaleFactor)
+      const catSize = Math.max(10, 11 * scaleFactor)
+      ctx.font = `600 ${nameSize}px sans-serif`
+      const nameW = ctx.measureText(name).width
+      ctx.font = `${catSize}px sans-serif`
+      const catW = ctx.measureText(category).width
+      const padX = 12 * Math.max(1, scaleFactor)
+      const w = Math.max(nameW, catW) + padX * 2
+      const h = nameSize + catSize + 18
+      const left = x - w / 2
+
+      ctx.globalAlpha = focusAmount
+      ctx.fillStyle = "rgba(11, 16, 32, 0.88)"
+      ctx.strokeStyle = "rgba(125,211,252, 0.45)"
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      if (ctx.roundRect) ctx.roundRect(left, top, w, h, 10)
+      else ctx.rect(left, top, w, h)
+      ctx.fill()
+      ctx.stroke()
+
+      ctx.fillStyle = "#e6eef8"
+      ctx.font = `600 ${nameSize}px sans-serif`
+      ctx.fillText(name, x, top + 8 + nameSize * 0.85)
+      ctx.fillStyle = "#7dd3fc"
+      ctx.font = `${catSize}px sans-serif`
+      ctx.fillText(category, x, top + 12 + nameSize + catSize * 0.85)
+      ctx.globalAlpha = 1
+      currentFont = "" // o rótulo trocou a fonte; o próximo planeta precisa redefinir
+    }
+
+    const draw = (elapsed: number) => {
+      const dt = Math.min(64, Math.max(0, elapsed - prevElapsed))
+      prevElapsed = elapsed
+      const centerX = width / 2
+      const centerY = height / 2
+
+      ctx.clearRect(0, 0, width, height)
+
+      // A órbita anda no próprio relógio: desacelera com foco, sem "pular" quando volta
+      orbitSpeed += ((focus ? 0.12 : 1) - orbitSpeed) * 0.08
+      orbitTime += dt * orbitSpeed
+      focusAmount += ((focus ? 1 : 0) - focusAmount) * 0.15
+
+      // Órbitas (elipses)
       CATEGORIES.forEach((category, c) => {
         const radius = baseRadius * category.radiusRatio
-
+        const highlighted = focus?.c === c
         ctx.strokeStyle = ringGradients[c]
-        ctx.lineWidth = 2 * scaleFactor
+        ctx.lineWidth = (highlighted ? 2.5 : 2) * scaleFactor
         ctx.beginPath()
-        ctx.ellipse(centerX, centerY, radius, radius * category.tilt, 0, 0, Math.PI * 2)
+        ctx.ellipse(centerX, centerY, radius, radius * tiltOf(category), 0, 0, Math.PI * 2)
         ctx.stroke()
 
-        ctx.strokeStyle = `rgba(255, 255, 255, ${0.1 + Math.sin(elapsed * 0.001 + radius) * 0.05})`
+        const base = 0.1 + Math.sin(elapsed * 0.001 + radius) * 0.05
+        ctx.strokeStyle = highlighted
+          ? `rgba(125,211,252, ${0.2 + 0.25 * focusAmount})`
+          : `rgba(255, 255, 255, ${base * (1 - focusAmount * 0.5)})`
         ctx.lineWidth = 1 * scaleFactor
         ctx.beginPath()
-        ctx.ellipse(centerX, centerY, radius, radius * category.tilt, 0, 0, Math.PI * 2)
+        ctx.ellipse(centerX, centerY, radius, radius * tiltOf(category), 0, 0, Math.PI * 2)
         ctx.stroke()
       })
 
       // Posições dos planetas neste frame
-      const planets = CATEGORIES.map((category) => {
+      const planets: Planet[] = []
+      CATEGORIES.forEach((category, c) => {
         const radius = baseRadius * category.radiusRatio
-        return category.techs.map((_, index) => {
-          const angle = elapsed * category.speed + (index * Math.PI * 2) / category.techs.length
+        category.techs.forEach((_, i) => {
+          const angle = orbitTime * category.speed + (i * Math.PI * 2) / category.techs.length
           const z = Math.sin(angle) * 0.5 + 0.5
           const scale = 0.8 + z * 0.5
-          return {
+          planets.push({
+            c,
+            i,
             x: centerX + Math.cos(angle) * radius,
-            y: centerY + Math.sin(angle) * radius * category.tilt,
+            y: centerY + Math.sin(angle) * radius * tiltOf(category),
             z,
             scale,
             iconSize: 32 * scale * scaleFactor,
-          }
+          })
         })
       })
+      const at = (c: number, i: number) => planets.find((p) => p.c === c && p.i === i)!
 
-      // Sinapses: o núcleo dispara pulsos até os planetas (sozinho ou quando o mouse passa sobre um)
+      // Foco: o planeta mais próximo do ponteiro (preferindo o da frente)
+      const pointer = hover
+      let nextFocus: typeof focus = null
+      if (pointer) {
+        let best = Infinity
+        for (const p of planets) {
+          const d = (p.x - pointer.x) ** 2 + (p.y - pointer.y) ** 2
+          const reach = (p.iconSize * 0.95) ** 2
+          const score = d - p.z * 40 // empate → o da frente vence
+          if (d < reach && score < best) {
+            best = score
+            nextFocus = { c: p.c, i: p.i }
+          }
+        }
+      }
+      if (nextFocus && (nextFocus.c !== focus?.c || nextFocus.i !== focus?.i)) {
+        // Novo foco: o núcleo dispara uma sinapse até ele
+        if (elapsed - lastHoverFire[nextFocus.c][nextFocus.i] > 700) {
+          lastHoverFire[nextFocus.c][nextFocus.i] = elapsed
+          synapses.push({ c: nextFocus.c, i: nextFocus.i, t: 0, speed: 0.0024 })
+        }
+      }
+      focus = nextFocus
+
+      // Sinapses espontâneas
       if (elapsed > nextSynapse) {
         nextSynapse = elapsed + 550 + Math.random() * 500
         const c = Math.floor(Math.random() * CATEGORIES.length)
         synapses.push({ c, i: Math.floor(Math.random() * CATEGORIES[c].techs.length), t: 0, speed: 0.0011 })
       }
-      const pointer = hover
-      if (pointer) {
-        planets.forEach((row, c) =>
-          row.forEach((p, i) => {
-            const near = (p.x - pointer.x) ** 2 + (p.y - pointer.y) ** 2 < (p.iconSize * 0.9) ** 2
-            if (near && elapsed - lastHoverFire[c][i] > 700) {
-              lastHoverFire[c][i] = elapsed
-              synapses.push({ c, i, t: 0, speed: 0.0022 })
-            }
-          }),
-        )
+
+      // Profundidade: planetas de trás → núcleo → sinapses → planetas da frente → planeta em foco
+      const sorted = planets.slice().sort((a, b) => a.z - b.z)
+      const isFocus = (p: Planet) => focus?.c === p.c && focus?.i === p.i
+
+      // Colisão de rótulos: posiciona os nomes da frente para trás; quem colidir com um já posicionado fica apagado
+      const placed: { l: number; r: number; t: number; b: number }[] = []
+      labelOk = new Set()
+      for (let n = sorted.length - 1; n >= 0; n--) {
+        const q = sorted[n]
+        if (isFocus(q)) continue
+        const size = Math.max(10, 12 * q.scale * scaleFactor)
+        const w = labelWidths[q.c][q.i] * (size / 12) // largura medida uma vez no resize, escalada
+        const y = q.y + q.iconSize + 13 * scaleFactor
+        const rect = { l: q.x - w / 2 - 4, r: q.x + w / 2 + 4, t: y - size, b: y + 4 }
+        if (!placed.some((o) => rect.l < o.r && rect.r > o.l && rect.t < o.b && rect.b > o.t)) {
+          placed.push(rect)
+          labelOk.add(q.c + "-" + q.i)
+        }
       }
+      ctx.textAlign = "center"
+      for (const p of sorted) if (p.z < 0.5 && !isFocus(p)) drawPlanet(p)
+
+      drawCore(elapsed, centerX, centerY)
 
       ctx.save()
       ctx.globalCompositeOperation = "lighter"
       for (let s = synapses.length - 1; s >= 0; s--) {
         const syn = synapses[s]
         syn.t += syn.speed * dt
-        const p = planets[syn.c][syn.i]
+        const p = at(syn.c, syn.i)
         if (syn.t >= 1) {
           flash[syn.c][syn.i] = 1
           synapses.splice(s, 1)
@@ -346,8 +450,8 @@ export default function EnhancedTechStack() {
         }
         const fade = syn.t < 0.15 ? syn.t / 0.15 : 1
         const line = ctx.createLinearGradient(centerX, centerY, p.x, p.y)
-        line.addColorStop(0, `rgba(139, 92, 246, ${0.45 * fade})`)
-        line.addColorStop(1, `rgba(6, 182, 212, ${0.25 * fade})`)
+        line.addColorStop(0, `rgba(59,130,246, ${0.45 * fade})`)
+        line.addColorStop(1, `rgba(125,211,252, ${0.25 * fade})`)
         ctx.strokeStyle = line
         ctx.lineWidth = 1.2 * scaleFactor
         ctx.beginPath()
@@ -357,7 +461,7 @@ export default function EnhancedTechStack() {
 
         const px = centerX + (p.x - centerX) * syn.t
         const py = centerY + (p.y - centerY) * syn.t
-        ctx.fillStyle = "rgba(6, 182, 212, 0.3)"
+        ctx.fillStyle = "rgba(125,211,252, 0.3)"
         ctx.beginPath()
         ctx.arc(px, py, 7 * scaleFactor, 0, Math.PI * 2)
         ctx.fill()
@@ -369,52 +473,9 @@ export default function EnhancedTechStack() {
       ctx.restore()
 
       ctx.textAlign = "center"
-      CATEGORIES.forEach((category, c) => {
-        category.techs.forEach((tech, index) => {
-          const { x, y, z, scale, iconSize } = planets[c][index]
-
-          const { sprite, half } = sprites[c][index]
-          const k = scale / MAX_SCALE
-          ctx.drawImage(sprite, x - half * k, y - half * k, half * 2 * k, half * 2 * k)
-
-          // Planeta atingido por uma sinapse: acende e emite um anel
-          const f = (flash[c][index] *= 0.955)
-          if (f > 0.03) {
-            ctx.save()
-            ctx.globalCompositeOperation = "lighter"
-            ctx.fillStyle = `rgba(6, 182, 212, ${f * 0.35})`
-            ctx.beginPath()
-            ctx.arc(x, y, iconSize / 2 + 4 * scaleFactor, 0, Math.PI * 2)
-            ctx.fill()
-            ctx.strokeStyle = `rgba(6, 182, 212, ${f * 0.8})`
-            ctx.lineWidth = 1.5 * scaleFactor
-            ctx.beginPath()
-            ctx.arc(x, y, iconSize / 2 + (1 - f) * 18 * scaleFactor, 0, Math.PI * 2)
-            ctx.stroke()
-            ctx.restore()
-          }
-
-          ctx.strokeStyle = `rgba(255, 255, 255, ${0.1 + z * 0.05})`
-          ctx.lineWidth = 1.5 * scaleFactor
-          ctx.beginPath()
-          ctx.arc(x, y, iconSize / 2, 0, Math.PI * 2)
-          ctx.stroke()
-
-          ctx.strokeStyle = `rgba(255, 255, 255, ${0.15 + z * 0.1})`
-          ctx.lineWidth = 1 * scaleFactor
-          ctx.beginPath()
-          ctx.arc(x, y, iconSize / 2 - 2 * scaleFactor, 0, Math.PI * 2)
-          ctx.stroke()
-
-          ctx.globalAlpha = Math.min(1, 0.7 + z * 0.3 + f * 0.3)
-          ctx.font = `${Math.max(10, 12 * scale * scaleFactor)}px sans-serif`
-          ctx.fillStyle = "rgba(0, 0, 0, 0.5)"
-          ctx.fillText(tech.name, x + 1, y + iconSize + 14 * scaleFactor)
-          ctx.fillStyle = f > 0.1 ? "#e6eef8" : "#9aa4b2"
-          ctx.fillText(tech.name, x, y + iconSize + 13 * scaleFactor)
-          ctx.globalAlpha = 1
-        })
-      })
+      for (const p of sorted) if (p.z >= 0.5 && !isFocus(p)) drawPlanet(p)
+      const focused = sorted.find(isFocus)
+      if (focused) drawPlanet(focused)
     }
 
     // Loop só roda enquanto a seção está visível. O tempo pausado não conta, então nada "salta" ao voltar.
@@ -472,17 +533,34 @@ export default function EnhancedTechStack() {
       play()
     })
 
-    const onMove = (e: PointerEvent) => {
+    const toLocal = (e: PointerEvent) => {
       const rect = canvas.getBoundingClientRect()
-      hover = { x: e.clientX - rect.left, y: e.clientY - rect.top }
+      return { x: e.clientX - rect.left, y: e.clientY - rect.top }
     }
-    const onLeave = () => (hover = null)
+    let touchTimer = 0
+    const onMove = (e: PointerEvent) => {
+      if (e.pointerType === "touch") return
+      hover = toLocal(e)
+    }
+    const onLeave = (e: PointerEvent) => {
+      if (e.pointerType !== "touch") hover = null
+    }
+    // Toque (celular, sem hover): o planeta tocado fica em foco por alguns segundos
+    const onDown = (e: PointerEvent) => {
+      if (e.pointerType !== "touch") return
+      hover = toLocal(e)
+      window.clearTimeout(touchTimer)
+      touchTimer = window.setTimeout(() => (hover = null), 2500)
+    }
     canvas.addEventListener("pointermove", onMove)
     canvas.addEventListener("pointerleave", onLeave)
+    canvas.addEventListener("pointerdown", onDown)
 
     return () => {
       canvas.removeEventListener("pointermove", onMove)
       canvas.removeEventListener("pointerleave", onLeave)
+      canvas.removeEventListener("pointerdown", onDown)
+      window.clearTimeout(touchTimer)
       cancelIdle()
       pause()
       ro.disconnect()
@@ -493,12 +571,12 @@ export default function EnhancedTechStack() {
   return (
     <section id="tech-stack" className="py-12 sm:py-16 lg:py-20">
       <h2 className="mb-3 text-center text-2xl font-bold sm:mb-4 sm:text-3xl lg:text-4xl">
-        Tecnologias &{" "}
-        <span className="bg-gradient-to-r from-[#8b5cf6] to-[#06b6d4] bg-clip-text text-transparent">Ferramentas</span>
+        {t.title}{" "}
+        <span className="bg-gradient-to-r from-[#3b82f6] to-[#7dd3fc] bg-clip-text text-transparent">{t.highlight}</span>
       </h2>
 
       <div className="px-4 sm:px-6 lg:px-8">
-        <div className="mb-6 flex justify-center sm:mb-8">
+        <div className="-mx-14 mb-6 flex justify-center sm:mx-0 sm:mb-8">
           <canvas
             ref={canvasRef}
             aria-hidden
@@ -507,9 +585,9 @@ export default function EnhancedTechStack() {
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-3 lg:gap-6">
-          {CATEGORIES.map((category) => (
-            <div key={category.title} className="rounded-xl border border-white/5 bg-white/[0.02] p-4 sm:p-5">
-              <h3 className="mb-3 text-sm font-semibold text-[#e6eef8] sm:text-base">{category.title}</h3>
+          {CATEGORIES.map((category, idx) => (
+            <div key={category.id} className="rounded-xl border border-white/5 bg-white/[0.02] p-4 sm:p-5">
+              <h3 className="mb-3 text-sm font-semibold text-[#e6eef8] sm:text-base">{t.categories[idx]}</h3>
               <div className="flex flex-wrap gap-2">
                 {category.techs.map((tech) => (
                   <div

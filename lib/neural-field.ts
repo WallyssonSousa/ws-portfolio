@@ -1,8 +1,8 @@
 // Rede neural interativa de fundo: neurônios flutuam em profundidade, conectam-se quando próximos
 // e trocam sinais. O ponteiro age como mais um neurônio; o clique dispara uma descarga em onda.
 
-const VIOLET = [139, 92, 246]
-const CYAN = [6, 182, 212]
+const DEEP_BLUE = [37, 99, 235]
+const LIGHT_BLUE = [125, 211, 252]
 const COLOR_BUCKETS = 6 // as sinapses são agrupadas por cor e opacidade: poucos strokes por frame
 const ALPHA_BUCKETS = 4
 
@@ -12,7 +12,7 @@ type Wave = { x: number; y: number; r: number; life: number }
 
 const POINTER = -1 // índice "virtual" do neurônio do ponteiro
 
-const mixRaw = (t: number) => VIOLET.map((v, i) => Math.round(v + (CYAN[i] - v) * t)).join(", ")
+const mixRaw = (t: number) => DEEP_BLUE.map((v, i) => Math.round(v + (LIGHT_BLUE[i] - v) * t)).join(", ")
 // Cores do gradiente pré-calculadas: nada de montar string de cor a cada frame
 const COLOR_STEPS = 32
 const COLOR_TABLE = Array.from({ length: COLOR_STEPS }, (_, i) => mixRaw(i / (COLOR_STEPS - 1)))
@@ -184,7 +184,7 @@ export function createNeuralField(
       for (const n of neurons) {
         const d = Math.hypot(n.sx - pointer.x, n.sy - pointer.y)
         if (d > pointerReach) continue
-        ctx.strokeStyle = `rgba(${CYAN.join(", ")}, ${(1 - d / pointerReach) * 0.45})`
+        ctx.strokeStyle = `rgba(${LIGHT_BLUE.join(", ")}, ${(1 - d / pointerReach) * 0.45})`
         ctx.beginPath()
         ctx.moveTo(pointer.x, pointer.y)
         ctx.lineTo(n.sx, n.sy)
@@ -308,6 +308,8 @@ export function createNeuralField(
 
   window.addEventListener("scroll", () => (scroll = window.scrollY), { passive: true, signal })
   window.addEventListener("neural-focus", (e) => (focusTarget = (e as CustomEvent<boolean>).detail ? 1 : 0), { signal })
+  // O assistente "pensando": dispara neurônios aleatórios na rede
+  window.addEventListener("neural-pulse", () => fire(Math.floor(Math.random() * neurons.length), 3), { signal })
 
   let resizeQueued = false
   window.addEventListener(

@@ -3,11 +3,13 @@
 import { useEffect, useRef, useState } from "react"
 import { ArrowLeft } from "lucide-react"
 import Header from "@/components/header"
+import { getDictionary } from "@/content/dictionaries"
+import type { Locale } from "@/lib/i18n"
 
 // Modo rede neural: o conteúdo se dissolve, a rede do fundo se intensifica e o visitante
 // fica livre para interagir com ela. Esc ou o botão "Voltar ao portfólio" trazem tudo de volta,
 // na mesma posição de rolagem. O conteúdo chega pronto do servidor via children.
-export default function HomeShell({ children }: { children: React.ReactNode }) {
+export default function HomeShell({ locale, children }: { locale: Locale; children: React.ReactNode }) {
   const [immersive, setImmersive] = useState(false)
   const [hidden, setHidden] = useState(false)
 
@@ -51,7 +53,7 @@ export default function HomeShell({ children }: { children: React.ReactNode }) {
           hidden ? "invisible" : ""
         }`}
       >
-        <Header onExplore={() => setImmersive(true)} />
+        <Header locale={locale} onExplore={() => setImmersive(true)} />
       </div>
       <div
         inert={immersive}
@@ -63,12 +65,13 @@ export default function HomeShell({ children }: { children: React.ReactNode }) {
         {children}
       </div>
 
-      {immersive && <NeuralModePanel onExit={exit} />}
+      {immersive && <NeuralModePanel locale={locale} onExit={exit} />}
     </>
   )
 }
 
-function NeuralModePanel({ onExit }: { onExit: () => void }) {
+function NeuralModePanel({ locale, onExit }: { locale: Locale; onExit: () => void }) {
+  const t = getDictionary(locale).neuralMode
   const buttonRef = useRef<HTMLButtonElement>(null)
 
   // Foca o "Voltar" depois que o conteúdo ficou inerte (autoFocus rodaria antes e perderia o foco)
@@ -81,25 +84,25 @@ function NeuralModePanel({ onExit }: { onExit: () => void }) {
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-8 sm:pb-10">
       <div
         role="dialog"
-        aria-label="Modo rede neural"
+        aria-label={t.label}
         className="glass pointer-events-auto flex w-full max-w-xl animate-[fadeUp_0.6s_ease_0.35s_both] flex-col items-center gap-4 rounded-2xl px-6 py-5 text-center sm:flex-row sm:text-left"
       >
         <div className="flex-1">
-          <p className="bg-gradient-to-r from-[#8b5cf6] to-[#06b6d4] bg-clip-text text-sm font-semibold text-transparent">
-            Você está dentro da rede neural
+          <p className="bg-gradient-to-r from-[#3b82f6] to-[#7dd3fc] bg-clip-text text-sm font-semibold text-transparent">
+            {t.title}
           </p>
           <p className="mt-1 text-sm text-[#9aa4b2]">
-            <span className="hidden sm:inline">Mova o mouse para ativar os neurônios e clique para uma descarga.</span>
-            <span className="sm:hidden">Toque na tela para disparar a rede.</span>
+            <span className="hidden sm:inline">{t.hintDesktop}</span>
+            <span className="sm:hidden">{t.hintMobile}</span>
           </p>
         </div>
         <button
           ref={buttonRef}
           onClick={onExit}
-          className="btn relative inline-flex shrink-0 items-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-[#8b5cf6] to-[#06b6d4] px-4 py-2.5 text-sm font-bold text-[#061025] shadow-[0_8px_32px_rgba(139,92,246,0.2)]"
+          className="btn relative inline-flex shrink-0 items-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-[#3b82f6] to-[#7dd3fc] px-4 py-2.5 text-sm font-bold text-[#061025] shadow-[0_8px_32px_rgba(59,130,246,0.2)]"
         >
           <ArrowLeft size={16} />
-          Voltar ao portfólio
+          {t.back}
           <kbd className="hidden rounded border border-[#061025]/30 px-1.5 text-[10px] font-semibold sm:inline">Esc</kbd>
         </button>
       </div>

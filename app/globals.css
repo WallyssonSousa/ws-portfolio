@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
-/* Identidade: navy profundo, gradiente violeta → ciano, vidro fosco */
+/* Identidade: navy profundo, gradiente azul (escuro → claro), vidro fosco */
 @theme {
-  --color-violet-brand: #8b5cf6;
-  --color-cyan-brand: #06b6d4;
+  --color-blue-brand: #3b82f6;
+  --color-sky-brand: #7dd3fc;
   --color-navy: #0b1020;
   --color-navy-deep: #071024;
   --color-ink: #e6eef8;
@@ -21,13 +21,30 @@
     color: #e6eef8;
   }
   :focus-visible {
-    outline: 2px solid #8b5cf6;
+    outline: 2px solid #3b82f6;
     outline-offset: 3px;
     border-radius: 6px;
   }
   /* Âncoras (#projects etc.) param abaixo do header fixo */
   section[id] {
     scroll-margin-top: 80px;
+  }
+  /* Tudo que é clicável mostra a mãozinha (o Tailwind deixa botões com cursor padrão) */
+  a[href],
+  button,
+  [role="button"],
+  summary,
+  label[for],
+  select,
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="submit"],
+  input[type="button"] {
+    cursor: pointer;
+  }
+  button:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
   }
 }
 
@@ -103,6 +120,20 @@
   }
 }
 
+/* Pulso atravessando a sinapse do estudo de caso */
+@keyframes casePulse {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.case-pulse {
+  animation: casePulse 3.2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
 @keyframes neuronPulse {
   0%,
   100% {
@@ -122,6 +153,7 @@
 @media (prefers-reduced-motion: reduce) {
   .word-in,
   .neuron-live,
+  .case-pulse,
   .diagram .signal {
     animation: none !important;
   }
@@ -129,5 +161,18 @@
     opacity: 1 !important;
     transform: none !important;
     filter: none !important;
+  }
+}
+
+/* Impressão / PDF do currículo: folha A4 limpa, sem fundo escuro nem efeitos */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm 16mm;
+  }
+  html,
+  body {
+    color-scheme: light;
+    background: #fff !important;
   }
 }

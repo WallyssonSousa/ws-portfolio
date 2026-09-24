@@ -69,8 +69,8 @@ function Diagram({ shape, className }: { shape: Shape; className: string }) {
     <svg viewBox={`0 0 ${shape.width} ${shape.height}`} className={className} aria-hidden>
       <defs>
         <linearGradient id="synapse-edge" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0" stopColor="#8b5cf6" stopOpacity="0.45" />
-          <stop offset="1" stopColor="#06b6d4" stopOpacity="0.35" />
+          <stop offset="0" stopColor="#3b82f6" stopOpacity="0.45" />
+          <stop offset="1" stopColor="#7dd3fc" stopOpacity="0.35" />
         </linearGradient>
       </defs>
       <g fill="none" strokeWidth="1">
@@ -82,7 +82,7 @@ function Diagram({ shape, className }: { shape: Shape; className: string }) {
             key={`s${i}`}
             d={d}
             className="signal"
-            stroke="#67e8f9"
+            stroke="#7dd3fc"
             strokeWidth="1.5"
             strokeLinecap="round"
             style={{ animationDelay: `${(i % 5) * -0.28}s` }}
@@ -91,7 +91,7 @@ function Diagram({ shape, className }: { shape: Shape; className: string }) {
       </g>
       {shape.cols.flat().map((n, i) => (
         <g key={i}>
-          <rect x={n.x - n.w / 2} y={n.y - PILL_H / 2} width={n.w} height={PILL_H} rx="8" fill="#10172e" stroke="rgba(167,139,250,0.35)" />
+          <rect x={n.x - n.w / 2} y={n.y - PILL_H / 2} width={n.w} height={PILL_H} rx="8" fill="#10172e" stroke="rgba(147,197,253,0.35)" />
           <text x={n.x} y={n.y} textAnchor="middle" dominantBaseline="central" fontSize="11" fill="#e6eef8" className="font-mono">
             {n.label}
           </text>
@@ -117,11 +117,19 @@ function Diagram({ shape, className }: { shape: Shape; className: string }) {
 
 // Diagrama da arquitetura como uma rede: cada camada é um grupo de nós, ligados em cascata.
 // Os sinais (.signal) só correm no hover do card ou com live (ver globals.css).
-export default function ArchDiagram({ layers, live = false }: { layers: ArchLayer[]; live?: boolean }) {
+export default function ArchDiagram({
+  layers,
+  live = false,
+  label = "Arquitetura",
+}: {
+  layers: ArchLayer[]
+  live?: boolean
+  label?: string
+}) {
   return (
     <div
       role="img"
-      aria-label={`Arquitetura: ${layers.map((l) => `${l.label} (${l.nodes.join(", ")})`).join(" → ")}`}
+      aria-label={`${label}: ${layers.map((l) => `${l.label} (${l.nodes.join(", ")})`).join(" → ")}`}
       className={`diagram h-full w-full ${live ? "is-live" : ""}`}
     >
       <Diagram shape={horizontal(layers)} className="hidden h-full w-full sm:block" />

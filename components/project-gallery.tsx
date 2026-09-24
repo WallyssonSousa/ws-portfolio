@@ -2,10 +2,13 @@
 
 import { useEffect, useState } from "react"
 import Image from "next/image"
+import { getDictionary } from "@/content/dictionaries"
+import type { Locale } from "@/lib/i18n"
 
 // Galeria com crossfade e navegação manual. Só a imagem atual e a próxima são montadas,
 // então as demais não são baixadas antes da hora.
-export default function ProjectGallery({ images, title }: { images: string[]; title: string }) {
+export default function ProjectGallery({ images, title, locale }: { images: string[]; title: string; locale: Locale }) {
+  const t = getDictionary(locale).projectPage
   const [current, setCurrent] = useState(0)
   const [mounted, setMounted] = useState(2)
   const [paused, setPaused] = useState(false)
@@ -32,7 +35,7 @@ export default function ProjectGallery({ images, title }: { images: string[]; ti
           <Image
             key={src}
             src={src}
-            alt={`Tela ${i + 1} de ${images.length} do projeto ${title}`}
+            alt={t.screenAlt(i + 1, images.length, title)}
             fill
             sizes="(min-width: 1150px) 1100px, 100vw"
             priority={i === 0}
@@ -42,7 +45,7 @@ export default function ProjectGallery({ images, title }: { images: string[]; ti
       </div>
       <figcaption className="flex items-center justify-between border-t border-white/10 px-5 py-3 text-xs text-[#9aa4b2]">
         <span>
-          Tela <span className="text-white">{current + 1}</span> de {images.length}
+          {t.screen} <span className="text-white">{current + 1}</span> {t.of} {images.length}
         </span>
         {images.length > 1 && (
           <span className="flex items-center gap-1">
@@ -50,13 +53,13 @@ export default function ProjectGallery({ images, title }: { images: string[]; ti
               <button
                 key={i}
                 onClick={() => go(i)}
-                aria-label={`Mostrar tela ${i + 1}`}
+                aria-label={t.showScreen(i + 1)}
                 aria-current={i === current}
                 className="grid h-6 w-6 place-items-center"
               >
                 <span
                   className={`block h-1.5 rounded-full transition-all ${
-                    i === current ? "w-5 bg-gradient-to-r from-[#8b5cf6] to-[#06b6d4]" : "w-1.5 bg-white/25"
+                    i === current ? "w-5 bg-gradient-to-r from-[#3b82f6] to-[#7dd3fc]" : "w-1.5 bg-white/25"
                   }`}
                 />
               </button>
