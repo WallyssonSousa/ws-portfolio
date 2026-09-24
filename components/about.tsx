@@ -1,197 +1,260 @@
+"use client"
 
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useEffect, useRef } from "react"
 import { Briefcase, Calendar, GraduationCap, MapPin } from "lucide-react"
+import { timeline } from "@/data/profile"
 
-type AcademicItem = {
-  title: string
-  institution: string
-  location?: string
-  period: string
-  details?: string
-  highlights?: string[]
-}
-
-type PROFISSIONALItem = {
-  role: string
-  company: string
-  location?: string
-  period: string
-  details?: string
-  stack?: string[]
-}
-
-const ACADEMIC: AcademicItem[] = [
-  {
-    title: "Tecnólogo em Análise e Desenvolvimento de Sistemas",
-    institution: "Faculdade Impacta",
-    location: "São Paulo, SP",
-    period: "2024 — Em Andamento",
-    details: "Tive aprendizado sólido em desenvolvimento web, mobile e banco de dados relacionais. Microserviços e boas práticas de engenharia de Software, além das práticas com arquitetura MVC e Hexagonal.",
-    highlights: ["Desenvolvimento Web", "Desenvolvimento Full Stack", "APIs RESTful", "Banco de Dados Relacionais",
-     "Microserviços", "Arquitetura Hexagonal", "Arquitetura MVC", "Engenharia de Software", "Desenvolvimento Mobile",
-     "Docker", "Git e GitHub", "Metodologias Ágeis"],
-  },
-  {
-    title: "Técnico em Desenvolvimento de Sistemas",
-    institution: "Etec Jardim Paulistano",
-    location: "São Paulo, SP",
-    period: "2021 — 2023",
-    details: "Meu primeiro contato com programação, tendo o conhecimento inicial e técnico em lógica de programação, algoritmos, desenvolvimento de sistemas, desenvolvimento mobile, análise de sistemas e banco de dados.",
-    highlights: ["Lógica de Programação", "Banco de dados relacionais", "Desenvolvimento Web", "Desenvolvimento Mobile", "Análise de Sistemas", "Desenvolvimento de Sistemas"
-     ],
-  },
-]
-
-const PROFISSIONAL: PROFISSIONALItem[] = [
-  {
-    role: "Estagiário em Desenvolvimento de Software",
-    company: "Soft Clever",
-    location: "Presencial",
-    period: "2025 - Atual",
-    details: "Construção de aplicações web para empresas dos setores de vendas e financeiro. Aplicações que interagem com o ERP Sirius, da própria Soft Clever. Desenvolvimento de Aplicativos PDV, com integração de API local e web. Além de manutenção e melhora em aplicações legados, seja backend ou frontend.",
-    stack: ["Next.js", "TypeScript", "MySQL", "Express", "Docker", "React Native", "Github", "Shadcn", "Figma", "Postman", "JavaScript", "Arquitetura MVC"],
-  },
-]
-
+// Linha do tempo como um axônio: um sinal percorre a linha e, ao passar por cada etapa,
+// o neurônio dispara, a sinapse leva o pulso até o cartão e o cartão brilha.
 export default function About() {
+  const listRef = useRef<HTMLOListElement>(null)
+  const signalRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const list = listRef.current!
+    const signal = signalRef.current!
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
+
+    let animations: Animation[] = []
+    let visible = false
+
+    const build = () => {
+      animations.forEach((a) => a.cancel())
+      animations = []
+
+      const height = list.offsetHeight
+      if (!height) return
+      const duration = Math.max(6000, height * 6.5) // ~155px/s
+      const timing: KeyframeAnimationOptions = { duration, iterations: Infinity, easing: "linear" }
+
+      signal.style.opacity = "1"
+      animations.push(
+        signal.animate([{ transform: "translateY(0px)" }, { transform: `translateY(${height}px)` }], timing),
+      )
+
+      const listTop = list.getBoundingClientRect().top
+      list.querySelectorAll<HTMLElement>("[data-neuron]").forEach((neuron) => {
+        const r = neuron.getBoundingClientRect()
+        const o = Math.min(0.9, Math.max(0.02, (r.top + r.height / 2 - listTop) / height))
+        const item = neuron.closest("li")!
+
+        // Halo do neurônio: dispara quando o sinal chega
+        const halo = neuron.querySelector<HTMLElement>("[data-halo]")!
+        animations.push(
+          halo.animate(
+            [
+              { opacity: 0, transform: "scale(0.6)", offset: 0 },
+              { opacity: 0, transform: "scale(0.6)", offset: o - 0.015 },
+              { opacity: 1, transform: "scale(1.3)", offset: o },
+              { opacity: 0, transform: "scale(2.6)", offset: o + 0.08 },
+              { opacity: 0, transform: "scale(0.6)", offset: 1 },
+            ],
+            timing,
+          ),
+        )
+
+        // Pulso atravessando a sinapse até o cartão
+        const pulse = item.querySelector<HTMLElement>("[data-pulse]")
+        const branch = item.querySelector<HTMLElement>("[data-branch]")
+        if (pulse && branch) {
+          const w = branch.offsetWidth
+          // Direção pela geometria real: no celular todos os cartões ficam à direita do axônio
+          const b = branch.getBoundingClientRect()
+          const dir = b.left + b.width / 2 < r.left + r.width / 2 ? -1 : 1
+          animations.push(
+            pulse.animate(
+              [
+                { opacity: 0, transform: "translateX(0px)", offset: 0 },
+                { opacity: 0, transform: "translateX(0px)", offset: o },
+                { opacity: 1, transform: `translateX(${(dir * w) / 2}px)`, offset: o + 0.02 },
+                { opacity: 0, transform: `translateX(${dir * w}px)`, offset: o + 0.04 },
+                { opacity: 0, transform: "translateX(0px)", offset: 1 },
+              ],
+              timing,
+            ),
+          )
+        }
+
+        // Cartão brilha quando o pulso chega
+        const glow = item.querySelector<HTMLElement>("[data-glow]")
+        if (glow) {
+          animations.push(
+            glow.animate(
+              [
+                { opacity: 0, offset: 0 },
+                { opacity: 0, offset: o + 0.03 },
+                { opacity: 1, offset: o + 0.05 },
+                { opacity: 0, offset: Math.min(0.99, o + 0.2) },
+                { opacity: 0, offset: 1 },
+              ],
+              timing,
+            ),
+          )
+        }
+      })
+
+      if (!visible) animations.forEach((a) => a.pause())
+    }
+
+    // Só monta as animações perto da tela, e só anima enquanto está visível
+    let dirty = true
+    let queued = 0
+    const ro = new ResizeObserver(() => {
+      dirty = true
+      if (!visible) return
+      cancelAnimationFrame(queued)
+      queued = requestAnimationFrame(() => {
+        dirty = false
+        build()
+      })
+    })
+    ro.observe(list)
+
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        visible = entry.isIntersecting
+        if (visible && dirty) {
+          dirty = false
+          build()
+        }
+        animations.forEach((a) => (visible ? a.play() : a.pause()))
+      },
+      { rootMargin: "200px" },
+    )
+    io.observe(list)
+
+    return () => {
+      cancelAnimationFrame(queued)
+      ro.disconnect()
+      io.disconnect()
+      animations.forEach((a) => a.cancel())
+    }
+  }, [])
+
   return (
     <section id="about" className="py-28">
-      <h2 className="section-title mb-5 text-[22px]">Sobre mim</h2>
- 
-      <p className="section-fade m-0 max-w-3xl opacity-0 translate-y-8 blur-[4px] transition-all duration-700">
+      <h2 className="mb-3 text-center text-2xl font-bold sm:mb-4 sm:text-3xl lg:text-4xl">
+        Minha{" "}
+        <span className="bg-gradient-to-r from-[#8b5cf6] to-[#06b6d4] bg-clip-text text-transparent">Trajetória</span>
+      </h2>
+      <p className="section-fade mx-auto max-w-2xl text-center text-[#9aa4b2] opacity-0 translate-y-8 blur-[4px] transition-all duration-700">
         Sou desenvolvedor com experiência em aplicações web, APIs e automação. Gosto de unir engenharia sólida com
         design e microinterações, mantendo performance e clareza como prioridades.
       </p>
 
-      {/* Tabs para tópicos */}
-      <div className="section-fade mt-8 opacity-0 translate-y-8 blur-[4px] transition-all duration-700">
-        <Tabs defaultValue="academica" className="w-full">
-          <TabsList className="flex w-full justify-start gap-2 rounded-xl bg-white/5 p-1.5">
-            <TabsTrigger
-              value="academica"
-              className="text-white/80 hover:text-white data-[state=active]:text-gray-900 data-[state=active]:bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.8))] data-[state=active]:border data-[state=active]:border-white/10 rounded-lg px-3 py-2 text-sm transition-colors duration-200"
-            >
-              <GraduationCap className="mr-2 h-4 w-4 opacity-80" />
-              Acadêmica
-            </TabsTrigger>
+      <div className="relative mt-16">
+        {/* Axônio */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute top-0 bottom-0 left-[19px] w-px bg-gradient-to-b from-[#8b5cf6]/70 via-[#6d8df0]/40 to-[#06b6d4]/70 md:left-1/2"
+        />
+        {/* Sinal percorrendo o axônio */}
+        <div
+          ref={signalRef}
+          aria-hidden
+          className="pointer-events-none absolute top-0 left-[19px] z-10 -ml-[5px] -mt-[60px] opacity-0 md:left-1/2"
+        >
+          <div className="mx-auto h-[56px] w-[2px] bg-gradient-to-b from-transparent to-[#06b6d4]" />
+          <div className="h-[11px] w-[11px] rounded-full bg-[#e6eef8] shadow-[0_0_12px_4px_rgba(6,182,212,0.7)]" />
+        </div>
 
-            <TabsTrigger
-              value="profissional"
-              className="text-white/80 hover:text-white data-[state=active]:text-gray-900 data-[state=active]:bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.8))] data-[state=active]:border data-[state=active]:border-white/10 rounded-lg px-3 py-2 text-sm transition-colors duration-200"
-            >
-              <Briefcase className="mr-2 h-4 w-4 opacity-80" />
-              Profissional
-            </TabsTrigger>
-          </TabsList>
+        <ol ref={listRef} className="space-y-12">
 
+        {timeline.map((item, i) => {
+          const side = i % 2 === 0 ? "left" : "right"
+          const Icon = item.kind === "trabalho" ? Briefcase : GraduationCap
+          return (
+            <li key={item.title} className="group relative pl-14 md:grid md:grid-cols-2 md:gap-16 md:pl-0">
+              {/* Neurônio */}
+              <div
+                data-neuron
+                aria-hidden
+                className="absolute top-6 left-[19px] z-10 h-[15px] w-[15px] -translate-x-1/2 md:left-1/2"
+              >
+                <span
+                  data-halo
+                  className="absolute -inset-3 rounded-full bg-[radial-gradient(circle,rgba(6,182,212,0.55),rgba(139,92,246,0.25)_45%,transparent_70%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                />
+                <span className="absolute inset-0 rounded-full bg-gradient-to-br from-[#8b5cf6] to-[#06b6d4] p-[2px]">
+                  <span className="block h-full w-full rounded-full bg-[#0b1020]" />
+                </span>
+                <span
+                  className={`absolute inset-[4px] rounded-full bg-gradient-to-br from-[#8b5cf6] to-[#06b6d4] transition-transform duration-300 group-hover:scale-125 ${
+                    item.current ? "neuron-live" : ""
+                  }`}
+                />
+              </div>
 
-          {/* Acadêmica */}
-          <TabsContent value="academica" className="mt-6">
-            <ul className="space-y-4">
-              {ACADEMIC.map((item, i) => (
-                <li
-                  key={item.title + i}
-                  className="rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01))] p-5 shadow-[0_6px_30px_rgba(2,6,23,0.25)]"
-                >
-                  <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                    <div>
-                      <div className="flex items-center gap-2 text-[15px] font-semibold">
-                        <GraduationCap className="h-4 w-4 opacity-80" />
-                        {item.title}
-                      </div>
-                      <div className="mt-1 text-sm text-[#cdd6e3]">
-                        {item.institution}
-                        {item.location && (
-                          <span className="ml-2 inline-flex items-center gap-1 text-xs text-[#9aa4b2]">
-                            <MapPin className="h-3.5 w-3.5" />
-                            {item.location}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="mt-1 inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs text-[#cdd6e3]">
+              {/* Sinapse neurônio → cartão */}
+              <div
+                data-branch={side}
+                aria-hidden
+                className={`absolute top-[31px] left-[19px] h-px w-[37px] bg-gradient-to-r from-[#8b5cf6]/60 to-[#06b6d4]/40 md:w-8 ${
+                  side === "left" ? "md:right-1/2 md:left-auto md:bg-gradient-to-l" : "md:left-1/2"
+                }`}
+              >
+                <span
+                  data-pulse
+                  className={`absolute -top-[2px] h-[5px] w-[5px] rounded-full bg-[#e6eef8] opacity-0 shadow-[0_0_8px_2px_rgba(6,182,212,0.8)] ${
+                    side === "left" ? "left-0 md:right-0 md:left-auto" : "left-0"
+                  }`}
+                />
+              </div>
+
+              {/* Cartão */}
+              <article
+                className={`section-fade glass relative overflow-hidden rounded-2xl p-6 opacity-0 translate-y-8 blur-[4px] transition-all duration-700 hover:border-white/20 ${
+                  side === "left" ? "md:col-start-1" : "md:col-start-2"
+                }`}
+              >
+                <div
+                  data-glow
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 rounded-2xl bg-[radial-gradient(120%_80%_at_0%_0%,rgba(6,182,212,0.14),transparent_60%)] opacity-0"
+                />
+                <div className="relative">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1 text-xs text-[#cdd6e3]">
                       <Calendar className="h-3.5 w-3.5" />
                       {item.period}
-                    </div>
+                    </span>
+                    {item.current && (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-[#06b6d4]/30 bg-[#06b6d4]/10 px-3 py-1 text-xs text-[#67e8f9]">
+                        <span className="h-1.5 w-1.5 rounded-full bg-[#06b6d4]" aria-hidden />
+                        atual
+                      </span>
+                    )}
                   </div>
 
-                  {(item.details || (item.highlights && item.highlights.length > 0)) && (
-                    <Accordion type="single" collapsible className="mt-3">
-                      <AccordionItem value="details">
-                        <AccordionTrigger className="text-sm">Ver detalhes</AccordionTrigger>
-                        <AccordionContent>
-                          {item.details && <p className="text-sm text-[#cdd6e3]">{item.details}</p>}
-                          {item.highlights && item.highlights.length > 0 && (
-                            <ul className="mt-2 list-disc pl-5 text-sm text-[#cdd6e3]">
-                              {item.highlights.map((h) => (
-                                <li key={h}>{h}</li>
-                              ))}
-                            </ul>
-                          )}
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </TabsContent>
+                  <h3 className="mt-4 flex items-start gap-2 text-lg font-semibold text-white">
+                    <Icon className="mt-1 h-4 w-4 shrink-0 text-[#a78bfa]" />
+                    {item.title}
+                  </h3>
+                  <p className="mt-1 flex items-center gap-1.5 text-sm text-[#cdd6e3]">
+                    <MapPin className="h-3.5 w-3.5 text-[#9aa4b2]" />
+                    {item.place}
+                  </p>
 
-          {/* Profissional */}
-          <TabsContent value="profissional" className="mt-6">
-            <ul className="space-y-4">
-              {PROFISSIONAL.map((item, i) => (
-                <li
-                  key={item.role + i}
-                  className="rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01))] p-5 shadow-[0_6px_30px_rgba(2,6,23,0.25)]"
-                >
-                  <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                    <div>
-                      <div className="flex items-center gap-2 text-[15px] font-semibold">
-                        <Briefcase className="h-4 w-4 opacity-80" />
-                        {item.role}
-                      </div>
-                      <div className="mt-1 text-sm text-[#cdd6e3]">
-                        {item.company}
-                        {item.location && (
-                          <span className="ml-2 inline-flex items-center gap-1 text-xs text-[#9aa4b2]">
-                            <MapPin className="h-3.5 w-3.5" />
-                            {item.location}
-                          </span>
-                        )}
-                      </div>
-                      {item.stack && item.stack.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {item.stack.map((s) => (
-                            <span key={s} className="rounded-full bg-white/5 px-2.5 py-1 text-xs text-[#cdd6e3]">
-                              {s}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div className="mt-1 inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs text-[#cdd6e3]">
-                      <Calendar className="h-3.5 w-3.5" />
-                      {item.period}
-                    </div>
-                  </div>
+                  {item.details && <p className="mt-4 text-sm leading-relaxed text-[#9aa4b2]">{item.details}</p>}
 
-                  {item.details && (
-                    <Accordion type="single" collapsible className="mt-3">
-                      <AccordionItem value="details">
-                        <AccordionTrigger className="text-sm">Principais responsabilidades</AccordionTrigger>
-                        <AccordionContent>
-                          <p className="text-sm text-[#cdd6e3]">{item.details}</p>
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
+                  {item.tags && (
+                    <ul className="mt-4 flex flex-wrap gap-2">
+                      {item.tags.map((t) => (
+                        <li
+                          key={t}
+                          className="rounded-full border border-white/5 bg-white/5 px-2.5 py-1 text-xs text-[#cdd6e3]"
+                        >
+                          {t}
+                        </li>
+                      ))}
+                    </ul>
                   )}
-                </li>
-              ))}
-            </ul>
-          </TabsContent>
-        </Tabs>
+                </div>
+              </article>
+            </li>
+          )
+        })}
+        </ol>
       </div>
     </section>
   )

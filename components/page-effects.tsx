@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react"
 import { usePathname } from "next/navigation"
 import { whenIdle } from "@/lib/idle"
+import { createNeuralField } from "@/lib/neural-field"
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(n, max))
@@ -195,99 +196,31 @@ export default function PageEffects() {
             )
         }
 
-        // Canvas de partículas de fundo (campo pseudo-3D)
-        if (!reduced) {
+        // Rede neural interativa de fundo (ver lib/neural-field.ts)
+        {
             const canvas = canvasRef.current!
-            const ctx = canvas.getContext("2d", { alpha: true })!
-            const DPR = Math.min(window.devicePixelRatio || 1, 1.5)
-
-            let W = 0,
-                H = 0
-            const resize = () => {
-                W = window.innerWidth
-                H = window.innerHeight
-                canvas.width = Math.floor(W * DPR)
-                canvas.height = Math.floor(H * DPR)
-                ctx.setTransform(DPR, 0, 0, DPR, 0, 0)
-                ctx.fillStyle = "#ffffff"
-                ctx.globalAlpha = 0.06
-            }
-            resize()
-            let resizeQueued = false
-            window.addEventListener(
-                "resize",
-                () => {
-                    if (resizeQueued) return
-                    resizeQueued = true
-                    requestAnimationFrame(() => {
-                        resize()
-                        resizeQueued = false
-                    })
-                },
-                { signal },
-            )
-
-            const COUNT = 340
-            const pts = new Float32Array(COUNT * 3)
-            for (let i = 0; i < pts.length; i += 3) {
-                pts[i] = (Math.random() - 0.5) * 850
-                pts[i + 1] = (Math.random() - 0.5) * 850
-                pts[i + 2] = (Math.random() - 0.5) * 420
-            }
-
-            let mx = 0
-            if (fine) {
-                window.addEventListener("pointermove", (e) => (mx = (e.clientX / W - 0.5) * 2), {
-                    passive: true,
-                    signal,
+            const field = createNeuralField(canvas, { interactive: fine && !reduced, signal })
+            if (reduced) {
+                canvas.style.opacity = "1"
+                field.still()
+            } else {
+                loops.push(field)
+                // Depois do carregamento a rede aparece (fade-in) num quadro estático e "acorda" na primeira
+                // interação, ou sozinha em 2,5s. Assim a animação nunca disputa a thread com a hidratação.
+                cancelIdle = whenIdle(() => {
+                    canvas.style.opacity = "1"
+                    field.still()
+                    const wake = () => {
+                        clearTimeout(timer)
+                        field.start()
+                    }
+                    const timer = setTimeout(wake, 2500)
+                    for (const type of ["pointermove", "pointerdown", "scroll", "keydown", "touchstart"]) {
+                        window.addEventListener(type, wake, { once: true, passive: true, signal })
+                    }
+                    signal.addEventListener("abort", () => clearTimeout(timer))
                 })
             }
-
-            const DEPTH = 200
-            let t = 0
-            const particles = frameLoop(() => {
-                t += 0.0023
-                ctx.clearRect(0, 0, W, H)
-
-                const tiltX = Math.sin(t * 0.6 + mx * 0.4) * 0.05
-                const rotY = t * 0.5 + mx * 0.1
-                const cos = Math.cos(rotY)
-                const sin = Math.sin(rotY)
-                const cosx = Math.cos(tiltX)
-                const sinx = Math.sin(tiltX)
-                const cx = W / 2
-                const cy = H / 2
-
-                // Todos os pontos num único path: uma chamada de fill por frame
-                ctx.beginPath()
-                for (let i = 0; i < pts.length; i += 3) {
-                    const x = pts[i],
-                        y = pts[i + 1],
-                        z = pts[i + 2]
-                    const rx = x * cos - z * sin
-                    const rz = x * sin + z * cos
-                    const ry = y * cosx - rz * sinx
-                    const rzz = y * sinx + rz * cosx
-                    const denom = DEPTH - rzz
-                    if (denom <= 0) continue // atrás da câmera
-
-                    const scale = DEPTH / denom
-                    const sx = cx + rx * scale
-                    const sy = cy + ry * scale
-                    const r = 2.2 * scale
-                    if (sx < -r || sx > W + r || sy < -r || sy > H + r) continue // fora da tela
-                    ctx.moveTo(sx + r, sy)
-                    ctx.arc(sx, sy, r, 0, Math.PI * 2)
-                }
-                ctx.fill()
-                return true
-            })
-            loops.push(particles)
-            // Só começa depois do carregamento, com fade-in, para não disputar a thread com a hidratação
-            cancelIdle = whenIdle(() => {
-                canvas.style.opacity = "1"
-                particles.start()
-            })
         }
 
         return () => {

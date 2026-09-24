@@ -1,6 +1,7 @@
 import type React from "react"
 
-import Image from "next/image"
+import ArchDiagram from "@/components/arch-diagram"
+import ProjectStatus from "@/components/project-status"
 import Link from "next/link"
 import { projects, type Project } from "@/data/projects"
 
@@ -12,7 +13,7 @@ export default function Projects() {
         <span className="bg-gradient-to-r from-[#8b5cf6] to-[#06b6d4] bg-clip-text text-transparent">Destaque</span>
       </h2>
 
-      <div className="projects mt-14 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="projects mt-14 grid grid-cols-1 gap-6 md:grid-cols-2">
         {projects.map((p) => (
           <ProjectCard key={p.slug} project={p} />
         ))}
@@ -25,7 +26,7 @@ export default function Projects() {
 function ProjectCard({ project }: { project: Project }) {
   return (
     <article
-      className="project-card section-fade group relative transform-gpu overflow-hidden rounded-xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.015))] shadow-[0_6px_30px_rgba(2,6,23,0.35)] transition-all duration-500 opacity-0 translate-y-8 blur-[4px] hover:border-white/20"
+      className="project-card section-fade group relative transform-gpu glass overflow-hidden rounded-xl transition-all duration-500 opacity-0 translate-y-8 blur-[4px] hover:border-white/20"
       data-tilt
       aria-label={`Abrir projeto ${project.title}`}
       style={
@@ -45,16 +46,14 @@ function ProjectCard({ project }: { project: Project }) {
         />
       </div>
 
-      <div className="relative h-56 overflow-hidden">
-        <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-40" />
+      <div className="relative h-64 overflow-hidden border-b border-white/5 sm:h-56">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-16 bg-gradient-to-t from-[#0b1020]/60 to-transparent" />
 
-        <Image
-          src={project.cover || "/placeholder.png"}
-          alt={`Capa do projeto ${project.title}`}
-          fill
-          sizes="(min-width: 1024px) 340px, (min-width: 640px) 50vw, 100vw"
-          className="object-cover transition-all duration-700 ease-out group-hover:scale-110 group-hover:brightness-110"
-        />
+        {/* Capa: a arquitetura do projeto desenhada como uma rede neural */}
+        <div className="absolute inset-0 bg-[radial-gradient(120%_90%_at_20%_0%,rgba(139,92,246,0.22),transparent_60%),radial-gradient(100%_80%_at_100%_100%,rgba(6,182,212,0.16),transparent_60%)]" />
+        <div className="absolute inset-0 px-2 pt-6 pb-2 transition-transform duration-700 ease-out group-hover:scale-105">
+          <ArchDiagram layers={project.architecture} />
+        </div>
 
         <div className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-md opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:scale-110">
           <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -68,12 +67,19 @@ function ProjectCard({ project }: { project: Project }) {
       </div>
 
       <div className="relative p-5">
+        <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-[#9aa4b2]">
+          <ProjectStatus status={project.status} />
+          <span>{project.year}</span>
+          <span aria-hidden>·</span>
+          <span>{project.kind}</span>
+        </div>
+
         <h3 className="mb-2 text-lg font-semibold transition-all duration-300 group-hover:bg-gradient-to-r group-hover:from-[#b4bcc8] group-hover:to-[#b4bcc8] group-hover:bg-clip-text group-hover:text-transparent">
           {project.title}
         </h3>
 
         <p className="mb-4 line-clamp-2 text-sm leading-relaxed text-[#9aa4b2] transition-colors duration-300 group-hover:text-[#b4bcc8]">
-          {project.description}
+          {project.summary}
         </p>
 
         <div className="flex flex-wrap gap-2">

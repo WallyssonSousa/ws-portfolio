@@ -3,40 +3,67 @@
 import { useEffect, useState } from "react"
 import Image from "next/image"
 
-// Galeria com crossfade: as imagens ficam empilhadas e só a opacidade muda.
-// Só a atual e a próxima são montadas, então as demais não são baixadas antes da hora.
+// Galeria com crossfade e navegação manual. Só a imagem atual e a próxima são montadas,
+// então as demais não são baixadas antes da hora.
 export default function ProjectGallery({ images, title }: { images: string[]; title: string }) {
   const [current, setCurrent] = useState(0)
   const [mounted, setMounted] = useState(2)
+  const [paused, setPaused] = useState(false)
 
   useEffect(() => {
-    if (images.length <= 1) return
-    const interval = setInterval(() => setCurrent((prev) => (prev + 1) % images.length), 6000)
+    if (images.length <= 1 || paused) return
+    const interval = setInterval(() => setCurrent((prev) => (prev + 1) % images.length), 5000)
     return () => clearInterval(interval)
-  }, [images.length])
+  }, [images.length, paused])
 
   useEffect(() => {
     setMounted((m) => Math.max(m, current + 2))
   }, [current])
 
+  const go = (i: number) => {
+    setPaused(true)
+    setCurrent((i + images.length) % images.length)
+  }
+
   return (
-    <div className="relative overflow-hidden rounded-t-2xl border-b border-white/10 bg-white/[0.02]">
-      <div className="relative h-[360px] md:h-[420px] w-full">
+    <figure className="glass overflow-hidden rounded-2xl">
+      <div className="relative aspect-[16/10] w-full bg-[#071024]">
         {images.slice(0, mounted).map((src, i) => (
           <Image
             key={src}
             src={src}
-            alt={`Imagem ${i + 1} do projeto ${title}`}
+            alt={`Tela ${i + 1} de ${images.length} do projeto ${title}`}
             fill
             sizes="(min-width: 1150px) 1100px, 100vw"
             priority={i === 0}
-            className={`object-cover transition-opacity duration-[1200ms] ease-[cubic-bezier(0.4,0,0.2,1)] ${
-              i === current ? "opacity-100" : "opacity-0"
-            }`}
+            className={`object-cover object-top transition-opacity duration-700 ${i === current ? "opacity-100" : "opacity-0"}`}
           />
         ))}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/25 to-transparent" />
       </div>
-    </div>
+      <figcaption className="flex items-center justify-between border-t border-white/10 px-5 py-3 text-xs text-[#9aa4b2]">
+        <span>
+          Tela <span className="text-white">{current + 1}</span> de {images.length}
+        </span>
+        {images.length > 1 && (
+          <span className="flex items-center gap-1">
+            {images.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => go(i)}
+                aria-label={`Mostrar tela ${i + 1}`}
+                aria-current={i === current}
+                className="grid h-6 w-6 place-items-center"
+              >
+                <span
+                  className={`block h-1.5 rounded-full transition-all ${
+                    i === current ? "w-5 bg-gradient-to-r from-[#8b5cf6] to-[#06b6d4]" : "w-1.5 bg-white/25"
+                  }`}
+                />
+              </button>
+            ))}
+          </span>
+        )}
+      </figcaption>
+    </figure>
   )
 }

@@ -21,29 +21,30 @@ const CATEGORIES: OrbitCategory[] = [
   {
     title: "O que eu uso no trabalho",
     techs: [
-      { name: "Next.js", color: "#FFFFFF", shadowColor: "rgba(255, 255, 255, 0.3)" },
-      { name: "TypeScript", color: "#3178C6", shadowColor: "rgba(49, 120, 198, 0.4)" },
-      { name: "Express", color: "#339933", shadowColor: "rgba(51, 153, 51, 0.4)" },
-      { name: "MySQL", color: "#CC2927", shadowColor: "rgba(204, 41, 39, 0.4)" },
+      { name: "Node.js", color: "#5FA04E", shadowColor: "rgba(95, 160, 78, 0.4)" },
+      { name: "Express", color: "#E6EDF3", shadowColor: "rgba(230, 237, 243, 0.3)" },
+      { name: "MySQL", color: "#00758F", shadowColor: "rgba(0, 117, 143, 0.45)" },
+      { name: "Redis", color: "#DC382D", shadowColor: "rgba(220, 56, 45, 0.4)" },
       { name: "Docker", color: "#2496ED", shadowColor: "rgba(36, 150, 237, 0.4)" },
-      { name: "Tailwind", color: "#38BDF8", shadowColor: "rgba(56, 189, 248, 0.4)" },
-      { name: "Figma", color: "#F24E1E", shadowColor: "rgba(242, 78, 30, 0.4)" },
-      { name: "Postman", color: "#FF6C37", shadowColor: "rgba(255, 108, 55, 0.4)" },
+      { name: "Angular", color: "#DD0031", shadowColor: "rgba(221, 0, 49, 0.4)" },
       { name: "GitHub", color: "#E6EDF3", shadowColor: "rgba(230, 237, 243, 0.3)" },
-      { name: "React Native", color: "#3FA9F5", shadowColor: "rgba(63, 169, 245, 0.4)" },
+      { name: "Postman", color: "#FF6C37", shadowColor: "rgba(255, 108, 55, 0.4)" },
     ],
     radiusRatio: 0.35, // 35% do raio base
     speed: 0.0005,
     tilt: 0.6,
   },
   {
-    title: "O que eu uso e estudo na faculdade",
+    title: "O que eu uso em projetos e na faculdade",
     techs: [
-      { name: "Python", color: "#3776AB", shadowColor: "rgba(55, 118, 171, 0.4)" },
+      { name: "TypeScript", color: "#3178C6", shadowColor: "rgba(49, 120, 198, 0.4)" },
+      { name: "Next.js", color: "#FFFFFF", shadowColor: "rgba(255, 255, 255, 0.3)" },
       { name: "React", color: "#61DAFB", shadowColor: "rgba(97, 218, 251, 0.4)" },
+      { name: "Tailwind", color: "#38BDF8", shadowColor: "rgba(56, 189, 248, 0.4)" },
+      { name: "NestJS", color: "#E0234E", shadowColor: "rgba(224, 35, 78, 0.4)" },
+      { name: "Python", color: "#3776AB", shadowColor: "rgba(55, 118, 171, 0.4)" },
       { name: "Flask", color: "#FFFFFF", shadowColor: "rgba(255, 255, 255, 0.3)" },
-      { name: "Postgres", color: "#336791", shadowColor: "rgba(51, 103, 145, 0.4)" },
-      { name: "Kotlin", color: "#A97BFF", shadowColor: "rgba(169, 123, 255, 0.4)" },
+      { name: "PostgreSQL", color: "#336791", shadowColor: "rgba(51, 103, 145, 0.4)" },
     ],
     radiusRatio: 0.55, // 55% do raio base
     speed: 0.0004,
@@ -54,8 +55,10 @@ const CATEGORIES: OrbitCategory[] = [
     techs: [
       { name: "Java", color: "#ED8B00", shadowColor: "rgba(237, 139, 0, 0.4)" },
       { name: "Spring Boot", color: "#6DB33F", shadowColor: "rgba(109, 179, 63, 0.4)" },
-      { name: "Nest.js", color: "#E0234E", shadowColor: "rgba(224, 35, 78, 0.4)" },
+      { name: "Go", color: "#00ADD8", shadowColor: "rgba(0, 173, 216, 0.4)" },
+      { name: "FastAPI", color: "#009688", shadowColor: "rgba(0, 150, 136, 0.4)" },
       { name: "MongoDB", color: "#47A248", shadowColor: "rgba(71, 162, 72, 0.4)" },
+      { name: "Kotlin", color: "#A97BFF", shadowColor: "rgba(169, 123, 255, 0.4)" },
     ],
     radiusRatio: 0.75, // 75% do raio base
     speed: 0.0003,
@@ -164,7 +167,18 @@ export default function EnhancedTechStack() {
       })
     }
 
+    // Sinapses núcleo → planeta e o "acender" de cada planeta
+    type Synapse = { c: number; i: number; t: number; speed: number }
+    const synapses: Synapse[] = []
+    const flash = CATEGORIES.map((c) => c.techs.map(() => 0))
+    const lastHoverFire = CATEGORIES.map((c) => c.techs.map(() => -Infinity))
+    let nextSynapse = 400
+    let hover: { x: number; y: number } | null = null
+    let prevElapsed = 0
+
     const draw = (elapsed: number) => {
+      const dt = Math.min(64, Math.max(0, elapsed - prevElapsed))
+      prevElapsed = elapsed
       const centerX = width / 2
       const centerY = height / 2
 
@@ -283,23 +297,102 @@ export default function EnhancedTechStack() {
         ctx.stroke()
       })
 
-      ctx.textAlign = "center"
-      CATEGORIES.forEach((category, c) => {
+      // Posições dos planetas neste frame
+      const planets = CATEGORIES.map((category) => {
         const radius = baseRadius * category.radiusRatio
-
-        category.techs.forEach((tech, index) => {
+        return category.techs.map((_, index) => {
           const angle = elapsed * category.speed + (index * Math.PI * 2) / category.techs.length
-
-          const x = centerX + Math.cos(angle) * radius
-          const y = centerY + Math.sin(angle) * radius * category.tilt
-
           const z = Math.sin(angle) * 0.5 + 0.5
           const scale = 0.8 + z * 0.5
-          const iconSize = 32 * scale * scaleFactor
+          return {
+            x: centerX + Math.cos(angle) * radius,
+            y: centerY + Math.sin(angle) * radius * category.tilt,
+            z,
+            scale,
+            iconSize: 32 * scale * scaleFactor,
+          }
+        })
+      })
+
+      // Sinapses: o núcleo dispara pulsos até os planetas (sozinho ou quando o mouse passa sobre um)
+      if (elapsed > nextSynapse) {
+        nextSynapse = elapsed + 550 + Math.random() * 500
+        const c = Math.floor(Math.random() * CATEGORIES.length)
+        synapses.push({ c, i: Math.floor(Math.random() * CATEGORIES[c].techs.length), t: 0, speed: 0.0011 })
+      }
+      const pointer = hover
+      if (pointer) {
+        planets.forEach((row, c) =>
+          row.forEach((p, i) => {
+            const near = (p.x - pointer.x) ** 2 + (p.y - pointer.y) ** 2 < (p.iconSize * 0.9) ** 2
+            if (near && elapsed - lastHoverFire[c][i] > 700) {
+              lastHoverFire[c][i] = elapsed
+              synapses.push({ c, i, t: 0, speed: 0.0022 })
+            }
+          }),
+        )
+      }
+
+      ctx.save()
+      ctx.globalCompositeOperation = "lighter"
+      for (let s = synapses.length - 1; s >= 0; s--) {
+        const syn = synapses[s]
+        syn.t += syn.speed * dt
+        const p = planets[syn.c][syn.i]
+        if (syn.t >= 1) {
+          flash[syn.c][syn.i] = 1
+          synapses.splice(s, 1)
+          continue
+        }
+        const fade = syn.t < 0.15 ? syn.t / 0.15 : 1
+        const line = ctx.createLinearGradient(centerX, centerY, p.x, p.y)
+        line.addColorStop(0, `rgba(139, 92, 246, ${0.45 * fade})`)
+        line.addColorStop(1, `rgba(6, 182, 212, ${0.25 * fade})`)
+        ctx.strokeStyle = line
+        ctx.lineWidth = 1.2 * scaleFactor
+        ctx.beginPath()
+        ctx.moveTo(centerX, centerY)
+        ctx.lineTo(p.x, p.y)
+        ctx.stroke()
+
+        const px = centerX + (p.x - centerX) * syn.t
+        const py = centerY + (p.y - centerY) * syn.t
+        ctx.fillStyle = "rgba(6, 182, 212, 0.3)"
+        ctx.beginPath()
+        ctx.arc(px, py, 7 * scaleFactor, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.fillStyle = "rgba(230, 238, 248, 0.95)"
+        ctx.beginPath()
+        ctx.arc(px, py, 2.4 * scaleFactor, 0, Math.PI * 2)
+        ctx.fill()
+      }
+      ctx.restore()
+
+      ctx.textAlign = "center"
+      CATEGORIES.forEach((category, c) => {
+        category.techs.forEach((tech, index) => {
+          const { x, y, z, scale, iconSize } = planets[c][index]
 
           const { sprite, half } = sprites[c][index]
           const k = scale / MAX_SCALE
           ctx.drawImage(sprite, x - half * k, y - half * k, half * 2 * k, half * 2 * k)
+
+          // Planeta atingido por uma sinapse: acende e emite um anel
+          const f = (flash[c][index] *= 0.955)
+          if (f > 0.03) {
+            ctx.save()
+            ctx.globalCompositeOperation = "lighter"
+            ctx.fillStyle = `rgba(6, 182, 212, ${f * 0.35})`
+            ctx.beginPath()
+            ctx.arc(x, y, iconSize / 2 + 4 * scaleFactor, 0, Math.PI * 2)
+            ctx.fill()
+            ctx.strokeStyle = `rgba(6, 182, 212, ${f * 0.8})`
+            ctx.lineWidth = 1.5 * scaleFactor
+            ctx.beginPath()
+            ctx.arc(x, y, iconSize / 2 + (1 - f) * 18 * scaleFactor, 0, Math.PI * 2)
+            ctx.stroke()
+            ctx.restore()
+          }
 
           ctx.strokeStyle = `rgba(255, 255, 255, ${0.1 + z * 0.05})`
           ctx.lineWidth = 1.5 * scaleFactor
@@ -313,11 +406,11 @@ export default function EnhancedTechStack() {
           ctx.arc(x, y, iconSize / 2 - 2 * scaleFactor, 0, Math.PI * 2)
           ctx.stroke()
 
-          ctx.globalAlpha = 0.7 + z * 0.3
+          ctx.globalAlpha = Math.min(1, 0.7 + z * 0.3 + f * 0.3)
           ctx.font = `${Math.max(10, 12 * scale * scaleFactor)}px sans-serif`
           ctx.fillStyle = "rgba(0, 0, 0, 0.5)"
           ctx.fillText(tech.name, x + 1, y + iconSize + 14 * scaleFactor)
-          ctx.fillStyle = "#9aa4b2"
+          ctx.fillStyle = f > 0.1 ? "#e6eef8" : "#9aa4b2"
           ctx.fillText(tech.name, x, y + iconSize + 13 * scaleFactor)
           ctx.globalAlpha = 1
         })
@@ -346,19 +439,31 @@ export default function EnhancedTechStack() {
       frameId = 0
     }
 
-    const ro = new ResizeObserver(() => {
+    // Sprites e primeiro quadro só são preparados quando a seção se aproxima da tela:
+    // nada disso roda durante o carregamento da página (estava custando ~150ms de TBT no mobile).
+    let sized = false
+    const prepare = () => {
+      if (sized) return
+      sized = true
       resize()
       draw(elapsed)
+    }
+    const ro = new ResizeObserver(() => {
+      sized = false
+      if (visible) prepare()
     })
     ro.observe(canvas)
 
     const io = new IntersectionObserver(
       ([entry]) => {
         visible = entry.isIntersecting
-        if (visible) play()
-        else pause()
+        if (visible) {
+          prepare()
+          play()
+        } else pause()
       },
-      { rootMargin: "100px" },
+      // Só quando a seção realmente aparece: logo abaixo da dobra ela não deve animar durante o carregamento
+      { threshold: 0.15 },
     )
     io.observe(canvas)
 
@@ -367,7 +472,17 @@ export default function EnhancedTechStack() {
       play()
     })
 
+    const onMove = (e: PointerEvent) => {
+      const rect = canvas.getBoundingClientRect()
+      hover = { x: e.clientX - rect.left, y: e.clientY - rect.top }
+    }
+    const onLeave = () => (hover = null)
+    canvas.addEventListener("pointermove", onMove)
+    canvas.addEventListener("pointerleave", onLeave)
+
     return () => {
+      canvas.removeEventListener("pointermove", onMove)
+      canvas.removeEventListener("pointerleave", onLeave)
       cancelIdle()
       pause()
       ro.disconnect()

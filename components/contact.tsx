@@ -2,7 +2,6 @@
 
 import type React from "react"
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -48,7 +47,7 @@ export default function Contact() {
 
           <div className="grid gap-4">
             {/* Email */}
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/[0.05]">
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/[0.05] backdrop-blur-md">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500/20 to-cyan-500/20 flex items-center justify-center border border-white/10">
                   <svg className="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,7 +72,7 @@ export default function Contact() {
             </div>
 
             {/* Telefone */}
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/[0.05]">
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/[0.05] backdrop-blur-md">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-violet-500/20 flex items-center justify-center border border-white/10">
                   <svg className="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -116,13 +115,21 @@ export default function Contact() {
             >
               LinkedIn
             </a>
+            <a
+              href="https://www.instagram.com/wallyssonsousa_/"
+              target="_blank"
+              rel="noreferrer"
+              className="px-4 py-3 rounded-xl bg-gradient-to-r from-white/[0.02] to-white/[0.01] border border-white/[0.05] text-[#9aa4b2] hover:text-white hover:border-white/10 transition-all duration-200 hover:-translate-y-[1px] text-sm"
+            >
+              Instagram
+            </a>
           </div>
         </div>
 
         {/* Formulário */}
         <div>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="p-8 rounded-2xl bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/[0.05] space-y-6">
+            <div className="p-8 rounded-2xl bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/[0.05] backdrop-blur-md space-y-6">
               <h3 className="text-lg font-semibold text-white mb-6">Envie uma mensagem</h3>
 
               <div className="space-y-4">
@@ -175,12 +182,12 @@ export default function Contact() {
                 </div>
               </div>
 
-              <Button
+              <button
                 type="submit"
-                className="w-full bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] hover:border-white/[0.2] text-white font-medium py-3 px-6 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-violet-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex w-full cursor-pointer items-center justify-center bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] hover:border-white/[0.2] text-white font-medium py-3 px-6 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-violet-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Enviar via WhatsApp
-              </Button>
+              </button>
             </div>
           </form>
         </div>

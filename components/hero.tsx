@@ -59,7 +59,7 @@ export default function Hero() {
 
         <div>
           <div
-            className="card-hero group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.03] to-white/[0.01] p-6 transition-all hover:border-white/20"
+            className="card-hero group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.03] to-white/[0.01] p-6 backdrop-blur-xl transition-all hover:border-white/20"
             id="profile-card"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-[#8b5cf6]/5 via-transparent to-[#06b6d4]/5 opacity-0 transition-opacity group-hover:opacity-100" />
@@ -73,6 +73,16 @@ export default function Hero() {
                   <div className="text-lg font-bold text-white">Wallysson Sousa</div>
                   <div className="text-sm text-[#9aa4b2]">Desenvolvedor Full-Stack</div>
                 </div>
+              </div>
+
+              <div className="mt-4 flex items-center gap-2 rounded-xl border border-white/5 bg-white/[0.03] px-3 py-2 text-sm text-[#cdd6e3]">
+                <span className="relative flex h-2.5 w-2.5 shrink-0" aria-hidden>
+                  <span className="neuron-live absolute inset-0 rounded-full bg-[#06b6d4]/60" />
+                  <span className="relative m-auto h-1.5 w-1.5 rounded-full bg-[#06b6d4]" />
+                </span>
+                <span>
+                  Desenvolvedor Backend na <span className="font-semibold text-white">L5 Network</span>
+                </span>
               </div>
 
               <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

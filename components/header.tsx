@@ -3,10 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, LogOut } from "lucide-react";
+import { BrainCircuit, Menu, X } from "lucide-react";
 
 interface HeaderProps {
-  onExit?: () => void; // ação do botão "Sair" (só existe na home)
+  onExplore?: () => void; // entra no modo rede neural (só existe na home)
 }
 
 const NAV_ITEMS = [
@@ -17,7 +17,7 @@ const NAV_ITEMS = [
   { id: "contact", label: "Contato" },
 ];
 
-export default function Header({ onExit }: HeaderProps) {
+export default function Header({ onExplore }: HeaderProps) {
   const [isOpen, setIsOpen] = useState(false);
   const isHome = usePathname() === "/";
 
@@ -55,17 +55,18 @@ export default function Header({ onExit }: HeaderProps) {
           />
         </nav>
 
-        {/* Botão "Sair" */}
-        {onExit ? (
+        {/* Modo rede neural: o conteúdo se dissolve e a rede do fundo fica em primeiro plano */}
+        {onExplore ? (
           <button
-            onClick={onExit}
-            className="hidden md:flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition hover:bg-white/10 hover:text-[#06b6d4]"
+            onClick={onExplore}
+            title="Esconder o conteúdo e interagir com a rede neural"
+            className="group hidden md:flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition hover:border-[#06b6d4]/40 hover:bg-white/10 hover:text-[#67e8f9]"
           >
-            <LogOut size={16} />
-            Sair
+            <BrainCircuit size={16} className="transition-transform duration-300 group-hover:scale-110" />
+            Rede neural
           </button>
         ) : (
-          <div className="hidden md:block w-[76px]" aria-hidden />
+          <div className="hidden md:block w-[128px]" aria-hidden />
         )}
 
         {/* Botão mobile menu */}
@@ -90,17 +91,17 @@ export default function Header({ onExit }: HeaderProps) {
                 </Link>
               </li>
             ))}
-            {onExit && (
+            {onExplore && (
               <li>
                 <button
                   onClick={() => {
                     setIsOpen(false);
-                    onExit();
+                    onExplore();
                   }}
                   className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition hover:bg-white/10"
                 >
-                  <LogOut size={16} />
-                  Sair
+                  <BrainCircuit size={16} />
+                  Rede neural
                 </button>
               </li>
             )}
